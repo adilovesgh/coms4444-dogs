@@ -43,7 +43,7 @@ In order to improve performance and readability of code during simulations, we w
 #### Simulator arguments:
 > **[-r | --rounds]**: number of rounds (default = 1000)
 
-> **[-t | --teams]**: space-separated teams/players
+> **[-n | --owners]**: space-separated owners
 
 > **[-s | --seed]**: seed value for random player (default = 10)
 
@@ -54,8 +54,6 @@ In order to improve performance and readability of code during simulations, we w
 > **[-g | --gui]**: enable GUI (default = false)
 
 > **[-d | --dogs]**: number of dogs (default = 1)
-
-> **[-n | --owners]**: enable GUI (default = 5)
 
 > **[-f | --fps]**: speed (frames per second) of GUI (default = 20)
 
