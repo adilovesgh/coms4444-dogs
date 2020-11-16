@@ -142,7 +142,7 @@ Classes that are used by the simulator include:
 
 
 ## Piazza
-If you have any questions about the project, please post them in the Piazza forum for the course, and an instructor will reply to them as soon as possible. Any updates to the project itself will be available in Piazza.
+If you have any questions about the project, please post them in the [Piazza forum](https://piazza.com/class/kdjd7v2b8925zz?cid=90) for the course, and an instructor will reply to them as soon as possible. Any updates to the project itself will be available in Piazza.
 
 
 ## Disclaimer
