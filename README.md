@@ -19,8 +19,50 @@ You will be creating your own player that extends the simulator's abstract playe
 2.  Create a Java file called `Player.java` inside your newly-created folder, and copy the following code into `Player.java` (the TODOs indicate all changes you need to make):
 
 ```
+package dogs.gx; // TODO modify the package name to reflect your team
+
+import java.util.*;
+
+import dogs.sim.Directive;
+import dogs.sim.Owner;
+import dogs.sim.SimPrinter;
+
+
+public class Player extends dogs.sim.Player {
+	
+    /**
+     * Player constructor
+     *
+     * @param rounds      	   number of rounds
+     * @param numDogsPerOwner  number of dogs per owner
+     * @param numOwners	  	   number of owners
+     * @param seed        	   random seed
+     * @param simPrinter  	   simulation printer
+     *
+     */
+     public Player(Integer rounds, Integer numDogsPerOwner, Integer numOwners, Integer seed, Random random, SimPrinter simPrinter) {
+         super(rounds, numDogsPerOwner, numOwners, seed, random, simPrinter);
+     }
+
+    /**
+     * Choose command/directive for next round
+     *
+     * @param round        current round
+     * @param myOwner      my owner
+     * @param otherOwners  all other owners in the park
+     * @return             a directive for the owner's next move
+     *
+     */
+    public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
+    
+    	// TODO add your code here to choose a directive
+	
+        return null; // TODO modify the return statement to return your directive
+    }
+}
 ```
 
+Note that the constructor contains all of the global information that you need, including the total number of rounds (`rounds`), the number of dogs for each owner (`numDogsPerOwner`), the number of owners (`numOwners`), the random seed (`seed`), the random generator itself (`random`), and the printing library (`simPrinter`). They can be accessed as public fields of the `Player` superclass.
 
 ## Submission
 You will be submitting your created team folder, which includes the implemented `Player` class and any other helper classes you create. We ask that you please do not modify any code in the `sim` or `random` directories, especially the simulator, when you submit your code. This makes it easier for us to merge in your code.
@@ -35,17 +77,19 @@ In order to improve performance and readability of code during simulations, we w
 1.  On your command line, *fork* the Git repository, and then clone the forked version. Do NOT clone the original repository.
 2.  Enter `cd coms4444-dogs/src` to enter the source folder of the repository.
 3.  Run `make clean` and `make compile` to clean and compile the code.
-4.  Update the make file (file called `Makefile`) with the teams participating in the game, as well as with any simulator arguments.
+4.  Update the make file (file called `Makefile`) with the teams participating in the simulation, as well as with any simulator arguments.
 5.  Run one of the following:
-    * `make run`: view results/rankings from the command line
-    * `make gui`: view results/rankings from the GUI
+    * `make run`: run the simulation and view the results/exercise scores from the command line
+    * `make gui`: run the simulation and view the results/exercise scores from the GUI
 
 #### Simulator arguments:
-> **[-r | --rounds]**: number of rounds (default = 1000)
+> **[-r | --rounds]**: number of rounds (default = 3600)
 
 > **[-n | --owners]**: space-separated owners
 
-> **[-s | --seed]**: seed value for random player (default = 10)
+> **[-d PATH | --dogs PATH]**: path to the configuration file of dog breed mixes
+
+> **[-s | --seed]**: seed value for random player (default = 42)
 
 > **[-l PATH | --log PATH]**: enable logging and output log to both console and log file
 
@@ -53,9 +97,9 @@ In order to improve performance and readability of code during simulations, we w
 
 > **[-g | --gui]**: enable GUI (default = false)
 
-> **[-d | --dogs]**: number of dogs (default = 1)
+> **[-y | --granularity]**: granularity (inverse number of steps per round) of the simulation (default = 0.01)
 
-> **[-f | --fps]**: speed (frames per second) of GUI (default = 20)
+> **[-f | --fps]**: speed (frames per second) of GUI (default = 30)
 
 
 ## API Description
