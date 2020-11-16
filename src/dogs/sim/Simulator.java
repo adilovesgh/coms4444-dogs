@@ -50,7 +50,7 @@ public class Simulator {
 	private static int numDogsPerOwner = 1;
 	private static int numOwners = 5;
 	private static int inverseGranularity = 100;
-	private static double fps = 20;
+	private static double fps = 30;
 	private static boolean showGUI = false;
 
 	// Defaults
