@@ -108,20 +108,20 @@
                 <div id="ps-container">
                     <div id="player-status-x" class="card mb-1 shadow-sm rounded m-1 d-none">
                         <div class="row no-gutters">
-                            <div class="col-md-2">
+                            <div class="col-md-1">
                                 <div class="d-flex justify-content-center h-100">
                                     <img src="owners/alice.png" class="ps-owner-img card-img p-2 h-100" alt="agent 1 avatar">
                                 </div>
                             </div>
-                            <div class="col-md-2 text-center">
-                                <h5 class="ps-gid card-title text-center text-capitalize mb-1">No statuses</h5>
+                            <div class="col-md-3 text-center">
+                                <h5 class="ps-gid card-title text-center mb-1">Unknown</h5>
                                 <span class="card-text">
-                                    <small class="text-monospace">T:</small>
-                                    <strong class="ps-t d-block">3600</strong>
-                                    <small class="text-monospace">A:</small>
-                                    <strong class="ps-a d-block">3600</strong>
-                                    <small class="text-monospace">Score:</small>
-                                    <strong class="ps-score d-block">3600</strong>
+                                    <small class="text-monospace" style="color:blue; font-weight: bold">Score:</small>
+                                    <strong class="ps-score d-block" style="color:blue; font-weight: bold">3600</strong>
+                                    <small class="text-monospace" style="font-weight: bold">T:</small>
+                                    <strong class="ps-t d-block" style="font-weight: bold">3600</strong>
+                                    <small class="text-monospace" style="font-weight: bold">A:</small>
+                                    <strong class="ps-a d-block" style="font-weight: bold">3600</strong>
                                 </span>
                             </div>
                             <div class="col-md-8">
@@ -247,7 +247,7 @@
               si.id = 'ps-' + i;
               si.classList.remove('d-none');
               si.getElementsByClassName('ps-owner-img')[0].src = "owners/" + ownerName.toLowerCase() + ".png";
-              si.getElementsByClassName('ps-gid')[0].innerText = ownerName;
+              si.getElementsByClassName('ps-gid')[0].innerText = ownerName + " (" + owners[ownerName]["team"] + ")";
 
               var tpl2 = si.getElementsByClassName('ps-dog')[0];
               var parent = tpl2.parentNode;

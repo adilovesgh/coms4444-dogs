@@ -683,14 +683,16 @@ public class Simulator {
 			List<Owner> otherOwners = new ArrayList<>(allOwners);
 			otherOwners.remove(owner);
 
+			String teamName = ownerToPlayerWrapperMap.get(owner).getPlayerName();
+			
 			double exerciseT = getExerciseT(owner);
 			double exerciseA = getExerciseA(otherOwners);
 			double exerciseScore = 0.5 * (exerciseT + exerciseA);
 			
-			Log.writeToLogFile("Owner: " + owner.getNameAsString());
+			Log.writeToLogFile("Owner: " + owner.getNameAsString() + " (" + teamName + ")");
+			Log.writeToLogFile("\tScore: " + decimalFormat.format(exerciseScore) + " seconds");
 			Log.writeToLogFile("\tT: " + decimalFormat.format(exerciseT) + " seconds");
 			Log.writeToLogFile("\tA: " + decimalFormat.format(exerciseA) + " seconds");
-			Log.writeToLogFile("\tScore: " + decimalFormat.format(exerciseScore) + " seconds");				
 			
 			for(Dog dog : owner.getDogs())
 				Log.writeToLogFile("\t" + dog.getBreed().name() + " " + dog.getRealID() + ": " + decimalFormat.format(100 * dog.getExerciseTimeCompleted() / Dog.TOTAL_EXERCISE_TIME) + "% exercise completed (" + decimalFormat.format(dog.getExerciseTimeCompleted()) + " seconds)");					
