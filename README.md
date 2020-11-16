@@ -122,6 +122,10 @@ The example contains 6 owners, each having 4 dogs. Note that you can have owners
 If you would like to create a new configuration, please add it to the `src/configs/` directory. The `simpleConfig.dat` configuration file has already been added for you, and it is the configuration used by the random player. Keep in mind that everyone will be sharing this directory for their configurations.
 
 
+## Dictionary
+
+The simulator provides a dictionary of nearly 235,000 inoffensive English words, including the names of the available owners, that can be used for signalling; the full list of words can be found in `src/dogs/sim/dictionary.txt`. You can also check to see if your word or words are in the dictionary by calling the `isInDictionary` and `areAllInDictionary` methods of the `Dictionary` class, respectively. The `Dictionary` class also provides a few other simple methods to retrieve information about the dictionary. "_" in the dictionary signifies an empty string or a no-op, indicating that no signal is given; this is the default signal
+
 ## GUI Features
 
 The GUI is divided into two sections. In the left section, you can view the simulation of the park and track where your owners and dogs are each round. Owners and dogs enter through the gate (upper-left-hand corner of the park) at the beginning of the simulation and may choose to exit the park at any time during the simulation by exiting through the gate. In the right section, you will be able to view the exercise status board and the signal history window. The exercise status board contains the `T`, `A`, and `score` values for each player in real time; these values depend on the amount of exercise dogs have completed. You can track the status of your dogs' exercise completion by monitoring the respective progress bars for those dogs. Hovering over the images of an owner and its dogs will reveal their current location in the park. Finally, the signal history window shows a running history of words previously signalled by owners; you can view the timestamp, round number, owner, and word for each signal entry.
