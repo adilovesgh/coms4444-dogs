@@ -41,9 +41,9 @@ In order to improve performance and readability of code during simulations, we w
     * `make gui`: view results/rankings from the GUI
 
 #### Simulator arguments:
-> **[-r | --rounds]**: number of rounds (default = 10)
+> **[-r | --rounds]**: number of rounds (default = 1000)
 
-> **[-t | --teams]**: space-separated teams/players
+> **[-n | --owners]**: space-separated owners
 
 > **[-s | --seed]**: seed value for random player (default = 10)
 
@@ -55,9 +55,7 @@ In order to improve performance and readability of code during simulations, we w
 
 > **[-d | --dogs]**: number of dogs (default = 1)
 
-> **[-n | --owners]**: enable GUI (default = 5)
-
-> **[-f | --fps]**: speed (frames per second) of GUI (default = 30)
+> **[-f | --fps]**: speed (frames per second) of GUI (default = 20)
 
 
 ## API Description
