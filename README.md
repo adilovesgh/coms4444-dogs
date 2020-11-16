@@ -134,17 +134,24 @@ The GUI is divided into two sections. In the left section, you can view the simu
 ## API Description
 
 The following provides the API available for students to use:
-1. `Player`: the player abstraction that should be extended by implemented players.
-2. `SimPrinter`: contains methods for toggled printing
+1. `Dictionary`: a static class to access the available words in the dictionary, including basic functionality to extract words.
+2. `Directive`: a directive/command specified by the player, including the instruction, park location (if applicable), the dog to interact with (if applicable), and a word signal (if applicable).
+3. `Dog`: a class to represent a specific dog, including functionality to track and maintain the status of that dog.
+4. `DogReference`: a simple helper class to extract dog breeds and speeds
+5. `Owner`: a class to represent a specific owner, including functionality to track and maintain the status of that owner.
+6. `ParkLocation`: a class to represent a specific location in the park, including basic functionality to extract and maintain location information.
+7. `Player`: the player abstraction that should be extended by implemented players.
+8. `SimPrinter`: contains methods for toggled printing
 	* `println`: prints with cursor at start of the next line.
 	* `print`: prints with cursor at the end of the current line.
 
 Classes that are used by the simulator include:
 1. `Simulator`: the simulator and entry point for the project; manages wrappers for individual players, logging, server, and GUI state.
-2. `HTTPServer`: a lightweight web server for the simulator.
-3. `PlayerWrapper`: a player wrapper that enforces appropriate timeouts on player actions.
-4. `Timer`: basic functionality for imposing timeouts.
-5. `Log`: basic functionality to log results, with the option to enable verbose logging.
+2. `Ball`: a class to represent a specific dog's tennis ball (not available to students to use, used for behind-the-scenes computation only)
+3. `HTTPServer`: a lightweight web server for the simulator.
+4. `PlayerWrapper`: a player wrapper that enforces appropriate timeouts on player actions.
+5. `Timer`: basic functionality for imposing timeouts.
+6. `Log`: basic functionality to log results, with the option to enable verbose logging.
 
 
 ## Piazza
