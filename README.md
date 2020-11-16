@@ -10,7 +10,7 @@ TA: Aditya Sridhar
 
 ## Project Description
 
-
+Please see the [course webpage](http://www.cs.columbia.edu/~kar/4444f20/node22.html) for a full project description.
 
 ## Implementation
 
@@ -97,9 +97,38 @@ In order to improve performance and readability of code during simulations, we w
 
 > **[-g | --gui]**: enable GUI (default = false)
 
-> **[-y | --granularity]**: granularity (inverse number of steps per round) of the simulation (default = 0.01)
+> **[-y | --granularity]**: granularity (inverse number of steps per round) of simulation (default = 0.01)
 
 > **[-f | --fps]**: speed (frames per second) of GUI (default = 30)
+
+
+## Dog Breed Configuration
+
+A configuration file (*.dat* extension) contains the set of dog breed mixes across all owners. Dog breeds are represented as a list of space-separated strings (case-insensitive), each indicating one of the four available dog breeds: *labrador*, *poodle*, *spaniel*, and *terrier*. Each owner has a separate list of dog breeds, which may differ among owners; however, the total number of dog breeds listed must be the same for each owner.
+
+An example of a dog breed configuration is as follows:
+
+```
+LABRADOR poodle Spaniel TERRIER
+POODLE POODLE POODLE POODLE
+terrier spaniel SPANIEL labrador
+Poodle terrier Labrador spaniel
+terrier terrier SPANIEL Terrier
+poodle poodle poodle Poodle
+```
+
+The example contains 6 owners, each having 4 dogs. Note that you can have owners with the same dog breed mix (owners 2 and 6, owners 1 and 4) and owners with multiple dogs of the same breed (owners 2, 3, 5, and 6).
+
+If you would like to create a new configuration, please add it to the `src/configs/` directory. The `simpleConfig.dat` configuration file has already been added for you, and it is the configuration used by the random player. Keep in mind that everyone will be sharing this directory for their configurations.
+
+
+## Dictionary
+
+The simulator provides a dictionary of nearly 235,000 inoffensive English words, including the names of the available owners, that can be used for signalling; the full list of words can be found in `src/dogs/sim/dictionary.txt`. You can also check to see if your word or words are in the dictionary by calling the `isInDictionary` and `areAllInDictionary` methods of the `Dictionary` class, respectively. The `Dictionary` class also provides a few other simple methods to retrieve information about the dictionary. "_" in the dictionary signifies an empty string or a no-op, indicating that no signal is given; this is the default signal
+
+## GUI Features
+
+The GUI is divided into two sections. In the left section, you can view the simulation of the park and track where your owners and dogs are each round. Owners and dogs enter through the gate (upper-left-hand corner of the park) at the beginning of the simulation and may choose to exit the park at any time during the simulation by exiting through the gate. In the right section, you will be able to view the exercise status board and the signal history window. The exercise status board contains the `T`, `A`, and `score` values for each player in real time; these values depend on the amount of exercise dogs have completed. You can track the status of your dogs' exercise completion by monitoring the respective progress bars for those dogs. Hovering over the images of an owner and its dogs will reveal their current location in the park. Finally, the signal history window shows a running history of words previously signalled by owners; you can view the timestamp, round number, owner, and word for each signal entry.
 
 
 ## API Description
@@ -119,7 +148,7 @@ Classes that are used by the simulator include:
 
 
 ## Piazza
-If you have any questions about the project, please post them in the Piazza forum for the course, and an instructor will reply to them as soon as possible. Any updates to the project itself will be available in Piazza.
+If you have any questions about the project, please post them in the [Piazza forum](https://piazza.com/class/kdjd7v2b8925zz?cid=90) for the course, and an instructor will reply to them as soon as possible. Any updates to the project itself will be available in Piazza.
 
 
 ## Disclaimer
