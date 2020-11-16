@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>PPS 2020 - Exercising the Dogs</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css">
+    <style type="text/css">
+      canvas {
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+      }
+
+      .progress-bar {
+        font-size: 0.8em;
+      }
+
+      .ps-owner-img, .ps-dog-img {
+        max-height: 83px;
+        width: auto;
+      }
+
+      .left-col, .right-col {
+        height: 99vh;
+      }
+
+      .right-col {
+        position: relative;
+      }
+
+      #ps-container, #signal-container {
+        top: 56px;
+        left: 0;
+        right: 0;
+        bottom: 2px;
+        overflow-y: auto;
+        margin-right: 50px;
+      }
+
+      #ps-container {
+        height: 700px;
+      }
+
+      #signal-container {
+        height: 500px;
+      }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: black;
+      }
+
+      h1 {
+        text-align: center;
+        color: white;
+      }
+
+      h2 {
+        text-align: center;
+        color: white;
+      }
+
+      h3 {
+        text-align: center;
+        color: white;
+      }
+
+      a {
+        text-decoration: none;
+        display: inline-block;
+        padding: 8px 16px;
+      }
+
+      a:hover {
+        background-color: #ddd;
+        color: black;
+        cursor: pointer;
+      }
+
+    </style>
+
+  </head>
+  <body>
+  	<h1>PPS 2020 - Exercising the Dogs</h1>
+
+    <div class="container-fluid pt-1">
+        <div class="row">
+            <div class="left-col col-8">
+                <canvas id="canvas" width="1360" height="1360" style="height: 100%; margin: auto;"></canvas>
+            </div>
+            <div class="right-col col-4">
+                <div class="row no-gutters">
+                    <div class="col-6">
+                        <h4><div class="text-center text-monospace" style="color:white;">Remaining Time: <span id="time"></span></div></h4>
+                    </div>
+                </div>
+                </br></br>
+                <h3>Exercise Status Board</h3>
+                <div id="ps-container">
+                    <div id="player-status-x" class="card mb-1 shadow-sm rounded m-1 d-none">
+                        <div class="row no-gutters">
+                            <div class="col-md-2">
+                                <div class="d-flex justify-content-center h-100">
+                                    <img src="owners/alice.png" class="ps-owner-img card-img p-2 h-100" alt="agent 1 avatar">
+                                </div>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <h5 class="ps-gid card-title text-center text-capitalize mb-1">No statuses</h5>
+                                <span class="card-text">
+                                    <small class="text-monospace">T:</small>
+                                    <strong class="ps-t d-block">3600</strong>
+                                    <small class="text-monospace">A:</small>
+                                    <strong class="ps-a d-block">3600</strong>
+                                    <small class="text-monospace">Score:</small>
+                                    <strong class="ps-score d-block">3600</strong>
+                                </span>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card-body p-1">
+                                    <div class="ps-dog">
+                                        <div class="row no-gutters">
+                                            <div class="col-1 text-center text-white">
+                                                <img src="dogs/labrador.png" class="ps-dog-img" style="height: 1em;" alt="labrador">
+                                            </div>
+                                            <div class="ps-exercise-dog ps-exercise col-10">
+                                                <div class="progress m-1">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                                        0%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>    
+                </div>
+                </br></br>
+                <h3>Signal History</h3>
+                <div id="signal-container">
+                    <div id="signals-x" class="card mb-1 shadow-sm rounded m-1 d-none">
+                        <div class="row no-gutters">                      
+                            <div class="col-md-12 text-center">
+                                <h5 class="signals-gid card-title text-center mb-1">No signals</h5>
+                            </div>
+                        </div>
+                    </div>    
+                </div>                
+            </div>
+        </div>
+    </div>
+
+  
+    <script>
+      var regexAlpha = /[^a-zA-Z]/g;
+      var regexNumeric = /[^0-9]/g;
+
+      var firstTime = true;
+
+      var parkBackgroundImage;
+      var gateImage;
+
+      var currentRound;
+
+      var owners;
+      var ownerImageMap = {};
+      var labradorImages = [];
+      var terrierImages = [];
+      var spanielImages = [];
+      var poodleImages = [];
+      var ballImages = [];
+
+      var signalsAdded = false;
+      var signals = [];
+      var signalNode;
+      var playerStatuses = [];
+      var dogNodes = [];
+
+      var offset = 50;
+
+      function sortAlphaNumeric(a, b) {
+          var aAlpha = a.replace(regexAlpha, "");
+          var bAlpha = b.replace(regexAlpha, "");
+          if(aAlpha === bAlpha) {
+              var aNumeric = parseInt(a.replace(regexNumeric, ""), 10);
+              var bNumeric = parseInt(b.replace(regexNumeric, ""), 10);
+              return aNumeric === bNumeric ? 0 : aNumeric > bNumeric ? 1 : -1;
+          }
+          return aAlpha > bAlpha ? 1 : -1;
+      }
+
+      function init() {
+          parkBackgroundImage = new Image();
+          parkBackgroundImage.src = "parkBackground.png";
+          gateImage = new Image();
+          gateImage.src = "gate2.png";
+
+          var ownerNames = Object.keys(owners).sort(sortAlphaNumeric);
+          for(var i = 0; i < ownerNames.length; i++) {
+              var ownerName = ownerNames[i];
+              var ownerImage = new Image();
+              ownerImage.src = "owners/" + ownerName.toLowerCase() + ".png";
+              ownerImageMap[ownerName] = ownerImage;
+
+              var dogInfo = owners[ownerName]["dogs"];
+              for(var j = 0; j < dogInfo.length; j++) {
+                  var dogBreed = dogInfo[j]["breed"];
+                  var dogImage = new Image();
+                  dogImage.src = "dogs/" + dogBreed.toLowerCase() + ".png";
+                  var dogImage2 = new Image();
+                  dogImage2.src = "dogs/" + dogBreed.toLowerCase() + ".png";
+                  switch(dogBreed.toLowerCase()) {
+                      case "labrador": labradorImages.push(dogImage); labradorImages.push(dogImage2); break;
+                      case "terrier": terrierImages.push(dogImage); terrierImages.push(dogImage2); break;
+                      case "spaniel": spanielImages.push(dogImage); spanielImages.push(dogImage2); break;
+                      case "poodle": poodleImages.push(dogImage); poodleImages.push(dogImage2); break;
+                  }
+
+                  var ballImage = new Image();
+                  ballImage.src = "tennisBall.png";
+                  var ballImage2 = new Image();
+                  ballImage2.src = "tennisBall.png";
+                  ballImages.push(ballImage);
+                  ballImages.push(ballImage2);
+              }
+          }
+
+          var tpl = document.getElementById('player-status-x');
+          var statusCont = tpl.parentNode;
+          
+          for(var i = 0; i < ownerNames.length; i++) {
+              var ownerName = ownerNames[i];
+
+              var si = tpl.cloneNode(true);
+              playerStatuses.push(si);
+              statusCont.appendChild(si);
+              si.id = 'ps-' + i;
+              si.classList.remove('d-none');
+              si.getElementsByClassName('ps-owner-img')[0].src = "owners/" + ownerName.toLowerCase() + ".png";
+              si.getElementsByClassName('ps-gid')[0].innerText = ownerName;
+
+              var tpl2 = si.getElementsByClassName('ps-dog')[0];
+              var parent = tpl2.parentNode;
+
+              var dogNode = {};
+              dogNode["playerStatus"] = si;
+              dogNode["dogs"] = [];
+              for(var j = 0; j < owners[ownerName]["dogs"].length; j++) {
+                  var dogInfo = owners[ownerName]["dogs"][j];
+                  var si2 = tpl2.cloneNode(true);
+                  si2.id = 'ps-dog' + j;
+                  si2.getElementsByClassName('ps-dog-img')[0].src = "dogs/" + dogInfo["breed"].toLowerCase() + ".png";
+                  parent.appendChild(si2);
+                  dogNode["dogs"].push(si2);
+              }
+              dogNodes.push(dogNode);
+              parent.removeChild(tpl2);
+          }
+
+          var signalID = document.getElementById('signals-x');
+          signalNode = signalID.cloneNode(true);
+          var signalIDParent = signalID.parentNode;
+          signalNode.getElementsByClassName('signals-gid')[0].innerText = "";
+          signalNode.classList.remove('d-none');
+          signalIDParent.appendChild(signalNode);
+
+          window.requestAnimationFrame(draw);
+      }
+
+      function draw() {
+          canvas = document.getElementById('canvas');
+          ctx = canvas.getContext('2d');
+          ctx.clearRect(offset, offset, canvas.width, canvas.height);
+
+          drawBorder(ctx);
+          drawStats();
+
+          ctx.drawImage(gateImage, 10, 0, 100, 100 * gateImage.height / gateImage.width);
+
+          var ownerNames = Object.keys(owners).sort(sortAlphaNumeric);
+          var labradorIndex = 0, spanielIndex = 0, terrierIndex = 0, poodleIndex = 0, ballIndex = 0;
+
+          for(var i = 0; i < ownerNames.length; i++) {
+              var ownerName = ownerNames[i];
+              if(owners[ownerName]["exitedPark"])
+                  continue;
+
+              if(owners[ownerName]["signal"] !== "_" && currentRound % 5 == 1) {
+                  var currDateObj = new Date();
+                  var month = currDateObj.getMonth() + 1;
+                  var day = currDateObj.getDate();
+                  var year = currDateObj.getFullYear();
+                  var hours = currDateObj.getHours();
+                  var minutes = currDateObj.getMinutes() < 10 ? "0" + currDateObj.getMinutes() : currDateObj.getMinutes();
+                  var seconds = currDateObj.getSeconds() < 10 ? "0" + currDateObj.getSeconds() : currDateObj.getSeconds();
+                  var fullDate = month + "/" + day + "/" + year;
+                  var fullTime = hours + ":" + minutes + ":" + seconds;
+
+                  if(!signalsAdded) {
+                      var signal = {
+                          "owner": ownerName,
+                          "word": owners[ownerName]["signal"],
+                          "round": currentRound,
+                          "date": fullDate,
+                          "time": fullTime
+                      };
+                      signals.push(signal);
+                  }
+              }
+
+              var ownerImage = ownerImageMap[ownerName];
+              var ownerLocation = owners[ownerName]["location"];
+              var ownerX = parseFloat(ownerLocation.substring(1, ownerLocation.length - 1).split(", ")[0]) * 6;
+              var ownerY = parseFloat(ownerLocation.substring(1, ownerLocation.length - 1).split(", ")[1]) * 6;
+              ownerImage.title = ownerName;
+              ctx.drawImage(ownerImage, ownerX + offset, ownerY + offset, 48, 48);
+
+              var dogInfo = owners[ownerName]["dogs"];
+              for(var j = 0; j < dogInfo.length; j++) {
+                  var dogBreed = dogInfo[j]["breed"];
+                  var dogImage = null;
+                  switch(dogBreed.toLowerCase()) {
+                      case "labrador": dogImage = labradorImages[labradorIndex]; labradorIndex++; break;
+                      case "terrier": dogImage = terrierImages[terrierIndex]; terrierIndex++; break;
+                      case "spaniel": dogImage = spanielImages[spanielIndex]; spanielIndex++; break;
+                      case "poodle": dogImage = poodleImages[poodleIndex]; poodleIndex++; break;
+                  }
+                  var dogLocation = dogInfo[j]["location"];
+                  var dogX = parseFloat(dogLocation.substring(1, dogLocation.length - 1).split(", ")[0]) * 6;
+                  var dogY = parseFloat(dogLocation.substring(1, dogLocation.length - 1).split(", ")[1]) * 6;
+                  dogImage.title = ownerName + "'s " + dogBreed + " " + dogInfo[j]["realID"];
+                  ctx.drawImage(dogImage, dogX + offset, dogY + offset, 48, 48);
+
+                  var ballImage = ballImages[ballIndex];
+                  ballIndex++;
+                  var ballLocation = dogInfo[j]["ballLocation"];
+                  var ballX = parseFloat(ballLocation.substring(1, ballLocation.length - 1).split(", ")[0]) * 6;
+                  var ballY = parseFloat(ballLocation.substring(1, ballLocation.length - 1).split(", ")[1]) * 6;
+                  ctx.drawImage(ballImage, ballX + offset, ballY + offset, 16, 16);
+              }
+          }
+
+          signalsAdded = true;
+
+          var signalsText = "";
+          for(var i = 0; i < signals.length; i++) {
+              var signal = signals[i];
+              var ownerName = signal.owner;
+              var word = signal.word;
+              var round = signal.round;
+              var fullDate = signal.date;
+              var fullTime = signal.time;
+              signalsText += `<a style="color:blue">${fullDate} ${fullTime}:</a>owner ${ownerName} signalled<a style="color:green">${word}</a>during round ${round}\n`;
+          }
+
+          signalNode.getElementsByClassName('signals-gid')[0].innerHTML = signalsText;
+
+
+          window.requestAnimationFrame(draw);
+      }
+
+      function drawBorder(ctx) {
+          ctx.beginPath();
+          ctx.lineWidth = "4";
+          ctx.strokeStyle = "orange";
+          ctx.fillStyle = "black";
+          ctx.rect(offset, offset, 1250, 1250);
+          ctx.drawImage(parkBackgroundImage, offset, offset, 1250, 1250);
+          ctx.stroke();
+      }
+
+      function drawLine(ctx, xStart, yStart, xEnd, yEnd) {
+          ctx.beginPath();
+          ctx.moveTo(xStart, yStart);
+          ctx.strokeStyle = "white";
+          ctx.lineTo(xEnd, yEnd);
+          ctx.stroke();
+      }
+
+      function drawStats() {
+          var ownerNames = Object.keys(owners).sort(sortAlphaNumeric);
+          for(var i = 0; i < ownerNames.length; i++) {
+              var ownerInfo = owners[ownerNames[i]];
+              var ps = playerStatuses[i];
+              ps.getElementsByClassName('ps-owner-img')[0].title = "Location: " + ownerInfo.location;
+              ps.getElementsByClassName("ps-t")[0].innerText = ownerInfo.T;
+              ps.getElementsByClassName("ps-a")[0].innerText = ownerInfo.A;
+              ps.getElementsByClassName("ps-score")[0].innerText = ownerInfo.score;
+
+              for(var j = 0; j < ownerInfo["dogs"].length; j++) {
+                  var si = dogNodes[i]["dogs"][j];
+                  var dogInfo = ownerInfo["dogs"][j];
+
+                  var movement = "stationary";
+                  if(dogInfo.isStationary)
+                      movement = "stationary";
+                  else if(dogInfo.isRunning)
+                      movement = "running";
+                  else if(dogInfo.isWalking)
+                      movement = "walking";
+
+                  si.getElementsByClassName('ps-dog-img')[0].title = "Dog name: " + dogInfo.breed + " " + dogInfo.realID + "\nLocation: " + dogInfo.location;
+                  updateExerciseStatus(dogInfo, si);
+              }
+          }
+      }
+
+      function updateExerciseStatus(dogInfo, si) {
+          var exerciseStatus = si.getElementsByClassName("ps-exercise-dog")[0];
+          var colorCl = 'primary';
+          if(dogInfo.completedExercise)
+              colorCl = "success";
+
+          var progress = exerciseStatus.getElementsByClassName("progress-bar")[0];
+          progress.classList.remove("bg-primary", "bg-secondary", "bg-success", "bg-danger");
+          progress.classList.add("bg-" + colorCl);
+          progress.style.width = dogInfo.percentageExerciseCompleted + "%";
+          if(dogInfo.completedExercise)
+              progress.innerText = "All exercise completed";
+          else
+              progress.innerText = dogInfo.percentageExerciseCompleted + "%";
+      }
+
+      function process(data) {
+          var result = JSON.parse(data);
+          owners = result.owners;
+          currentRound = result.currentRound;
+          signalsAdded = false;
+          if(firstTime) {
+              init(result);
+              firstTime = false;
+          }
+          
+          timeElement = document.getElementById('time');
+          timeElement.innerHTML = parseInt(result.totalRounds) - parseInt(result.currentRound);
+
+          var refresh = parseFloat(result.refresh);
+          return refresh;
+      }
+
+      var latest_version = -1;
+
+      function ajax(version, retries, timeout) {
+          var xhttp = new XMLHttpRequest();
+          xhttp.onload = (function() {
+              var refresh = -1;
+              try {
+                  if(xhttp.readyState != 4)   
+                      throw "Incomplete HTTP request: " + xhttp.readyState;
+                  if(xhttp.status != 200)
+                      throw "Invalid HTTP status: " + xhttp.status;
+
+                  refresh = process(xhttp.responseText);
+                  if(latest_version < version)
+                      latest_version = version;
+                  else
+                      refresh = -1;
+              } catch(message) {
+                  alert(message);
+              }
+
+              if(refresh >= 0)
+                  setTimeout(function() { ajax(version + 1, 10, 100); }, refresh);
+          });
+          xhttp.onabort = (function() {});
+          xhttp.onerror = (function() {});
+          xhttp.ontimeout = (function() {
+              if(version <= latest_version)
+                  console.log("AJAX timeout (version " + version + " <= " + latest_version + ")");
+              else if(retries == 0)
+                  location.reload(true);
+              else {
+                  console.log("AJAX timeout (version " + version + ", retries: " + retries + ")");
+                  ajax(version, retries - 1, timeout * 2);
+              }
+          });
+          xhttp.open("GET", "data.txt", true);
+          xhttp.responseType = "text";
+          xhttp.timeout = timeout;
+          xhttp.send();
+      }
+
+      ajax(1, 10, 100);
+    </script>
+  </body>
+</html>
