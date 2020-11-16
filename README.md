@@ -33,11 +33,11 @@ public class Player extends dogs.sim.Player {
     /**
      * Player constructor
      *
-     * @param rounds      	   number of rounds
+     * @param rounds           number of rounds
      * @param numDogsPerOwner  number of dogs per owner
-     * @param numOwners	  	   number of owners
-     * @param seed        	   random seed
-     * @param simPrinter  	   simulation printer
+     * @param numOwners	       number of owners
+     * @param seed             random seed
+     * @param simPrinter       simulation printer
      *
      */
      public Player(Integer rounds, Integer numDogsPerOwner, Integer numOwners, Integer seed, Random random, SimPrinter simPrinter) {
