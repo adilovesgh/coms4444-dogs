@@ -97,7 +97,7 @@ In order to improve performance and readability of code during simulations, we w
 
 > **[-g | --gui]**: enable GUI (default = false)
 
-> **[-y | --granularity]**: granularity (inverse number of steps per round) of the simulation (default = 0.01)
+> **[-y | --granularity]**: granularity (inverse number of steps per round) of simulation (default = 0.01)
 
 > **[-f | --fps]**: speed (frames per second) of GUI (default = 30)
 
