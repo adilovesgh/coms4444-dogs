@@ -124,7 +124,7 @@ If you would like to create a new configuration, please add it to the `src/confi
 
 ## Dictionary
 
-The simulator provides a dictionary of nearly 235,000 inoffensive English words, including the names of the available owners, that can be used for signalling; the full list of words can be found in `src/dogs/sim/dictionary.txt`. You can also check to see if your word or words are in the dictionary by calling the `isInDictionary` and `areAllInDictionary` methods of the `Dictionary` class, respectively. The `Dictionary` class also provides a few other simple methods to retrieve information about the dictionary. "_" in the dictionary signifies an empty string or a no-op, indicating that no signal is given; this is the default signal
+The simulator provides a dictionary of nearly 235,000 inoffensive English words, including the names of the available owners, that can be used for signalling; the full list of words can be found in `src/dogs/sim/dictionary.txt`. You can also check to see if your word or words are in the dictionary by calling the `isInDictionary` and `areAllInDictionary` methods of the `Dictionary` class, respectively. The `Dictionary` class also provides a few other simple methods to retrieve information about the dictionary. "_" in the dictionary signifies an empty string or a no-op, indicating that no signal is given; this is the default signal.
 
 ## GUI Features
 
