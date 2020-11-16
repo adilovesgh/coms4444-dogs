@@ -119,6 +119,8 @@ poodle poodle poodle Poodle
 
 The example contains 6 owners, each having 4 dogs. Note that you can have owners with the same dog breed mix (owners 2 and 6, owners 1 and 4) and owners with multiple dogs of the same breed (owners 2, 3, 5, and 6).
 
+If you would like to create a new configuration, please add it to the `src/configs/` directory. The `simpleConfig.dat` configuration file has already been added for you, and it is the configuration used by the random player. Keep in mind that everyone will be sharing this directory for their configurations.
+
 
 ## GUI Features
 
