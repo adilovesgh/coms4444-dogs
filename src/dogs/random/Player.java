@@ -38,9 +38,7 @@ public class Player extends dogs.sim.Player {
      * @return             a directive for the owner's next move
      *
      */
-    public Directive chooseDirective(Integer round,
-    								 Owner myOwner,
-    								 List<Owner> otherOwners) {
+    public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
     	    	    	
     	Directive directive = new Directive();
     	

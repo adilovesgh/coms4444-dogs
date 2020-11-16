@@ -37,8 +37,6 @@ public abstract class Player {
      * @return             a directive for the owner's next move
      *
      */
-    public abstract Directive chooseDirective(Integer round,
-    										  Owner myOwner,
-    									  	  List<Owner> otherOwners);
+    public abstract Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners);
 
 }
