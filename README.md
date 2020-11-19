@@ -15,7 +15,7 @@ Please see the [course webpage](http://www.cs.columbia.edu/~kar/4444f20/node22.h
 ## Implementation
 
 You will be creating your own player that extends the simulator's abstract player. Please follow these steps to begin your implementation:
-1.  Enter the `coms4444-dogs/src` source directory, and create a folder called "g*x*" (where *x* is the number of your team). For example, if you are team "g5," please create a folder called "g5" in the `src` directory.
+1.  Enter the `coms4444-dogs/src/dogs` source directory, and create a folder called "g*x*" (where *x* is the number of your team). For example, if you are team "g5," please create a folder called "g5" in the `src/dogs` directory.
 2.  Create a Java file called `Player.java` inside your newly-created folder, and copy the following code into `Player.java` (the TODOs indicate all changes you need to make):
 
 ```
