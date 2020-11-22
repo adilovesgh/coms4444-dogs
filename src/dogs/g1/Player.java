@@ -129,7 +129,7 @@ public class Player extends dogs.sim.Player {
      * Get the shortest path to starting point along which player will move
      *
      * @param start        starting point
-     * @return             a directive for the owner's next move
+     * @return             list of park locations along which owner will move to get to starting point
      *
      */
     public List<ParkLocation> shortestPath(ParkLocation start) {
