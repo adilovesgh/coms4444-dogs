@@ -1,4 +1,4 @@
-package dogs.random;
+package dogs.g3;
 
 import java.util.*;
 
