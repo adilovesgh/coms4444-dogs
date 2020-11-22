@@ -11,6 +11,7 @@ import dogs.sim.Directive.Instruction;
 
 
 public class Player extends dogs.sim.Player {
+    List<ParkLocation> path;
 	
     /**
      * Player constructor
@@ -24,6 +25,7 @@ public class Player extends dogs.sim.Player {
      */
      public Player(Integer rounds, Integer numDogsPerOwner, Integer numOwners, Integer seed, Random random, SimPrinter simPrinter) {
          super(rounds, numDogsPerOwner, numOwners, seed, random, simPrinter);
+         this.path = new ArrayList<>();
      }
 
     /**
@@ -36,25 +38,45 @@ public class Player extends dogs.sim.Player {
      *
      */
     public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
-    
+        Directive directive = new Directive();
+        if (round == 1) {
+            ParkLocation myLoc = getStartingLocation(myOwner, otherOwners);
+            this.path = shortestPath(myLoc);
+        }
+        // seems like there's a bug with round? Using (round-1)/5 for now
+        if ((round-1)/5 < this.path.size()) {
+            directive.instruction = Instruction.MOVE;
+            directive.parkLocation = this.path.get((round-1)/5);
+            return directive;
+        }
+        
     	// TODO add your code here to choose a directive
-
-        return null; // TODO modify the return statement to return your directive
+        return directive;
     }
 
     /**
-     * Get the location where the current player will move to in this round
+     * Get the location where the current player will move to in the circle
      *
      * @param myOwner      my owner
      * @param otherOwners  all other owners in the park
      * @return             a directive for the owner's next move
      *
      */
-    public Directive getLocation(Owner myOwner, List<Owner> otherOwners) {
-    
-    	// TODO add code
-	
-        return null;
+    public ParkLocation getStartingLocation(Owner myOwner, List<Owner> otherOwners) {
+    	List<String> ownerNames = new ArrayList<>();
+        String myName = myOwner.getNameAsString();
+        ownerNames.add(myName);
+        for (Owner owner : otherOwners)
+            ownerNames.add(owner.getNameAsString());
+
+        int numOwners = ownerNames.size();
+        double dist = 40.0;     // use 40 for now
+        List<ParkLocation> optimalStartingLocations = getOptimalLocationShape(numOwners, dist);
+   
+        Collections.sort(ownerNames);
+        int myIndex = ownerNames.indexOf(myName);
+        ParkLocation myLoc = optimalStartingLocations.get(myIndex);
+        return myLoc;
     }
 
     /**
@@ -89,7 +111,7 @@ public class Player extends dogs.sim.Player {
         }
         else {
             double radian = Math.toRadians(360.0/n);
-            double center = Math.sin(radian/2)*dist/2;
+            double center = (dist/2)/(Math.sin(radian/2));
             double radius = center;
             double tempRadian = 0.0;
             for (int i = 0; i < n; i++) {
@@ -110,10 +132,27 @@ public class Player extends dogs.sim.Player {
      *
      */
     public List<ParkLocation> shortestPath(ParkLocation start) {
-
-        // TODO add code
+        List<ParkLocation> path = new ArrayList<>();
+        double magnitude = euclideanDistance(start.getRow(), start.getColumn());
+        if (magnitude == 0)
+            return path;
         
-        return null;
+        double xStep = start.getRow()/magnitude;
+        double yStep = start.getColumn()/magnitude;
+        double xTemp = 0;
+        double yTemp = 0;
+        while (xTemp <= start.getRow() && yTemp <= start.getColumn()) {
+            if (xTemp != 0 || yTemp != 0)
+                path.add(new ParkLocation(xTemp, yTemp));
+            xTemp += xStep*5;
+            yTemp += yStep*5;
+        }
+        path.add(start);
+        return path;
+    }
+
+    public double euclideanDistance(double x, double y) {
+        return Math.sqrt(Math.pow(x,2)+Math.pow(y,2));
     }
 
     // Testing - run with "java dogs/g1/Player.java" in src folder
