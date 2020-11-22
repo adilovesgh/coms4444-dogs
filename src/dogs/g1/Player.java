@@ -96,7 +96,7 @@ public class Player extends dogs.sim.Player {
                 double x = Math.cos(tempRadian) * radius + center;
                 double y = Math.sin(tempRadian) * radius + center;
                 shape.add(new ParkLocation(x,y));
-                tempRadian += radian;
+                tempRadian -= radian;
             }
         }
         return shape;
@@ -147,7 +147,13 @@ public class Player extends dogs.sim.Player {
         optimalShape = player.getOptimalLocationShape(n, dist);
         System.out.println(optimalShape);
 
-        // TEST 5 - optimal regular octogon
+        // TEST 5 - optimal regular hexagon
+        dist = 5;
+        n = 6;
+        optimalShape = player.getOptimalLocationShape(n, dist);
+        System.out.println(optimalShape);
+
+        // TEST 6 - optimal regular octogon
         dist = Math.sqrt(10);
         n = 8;
         optimalShape = player.getOptimalLocationShape(n, dist);
