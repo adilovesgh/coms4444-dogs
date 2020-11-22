@@ -168,7 +168,7 @@ public class Player extends dogs.sim.Player {
         List<ParkLocation> optimalShape = player.getOptimalLocationShape(n, dist);
         System.out.println(optimalShape);
 
-        // TEST 2 - optimal triangle
+        // TEST 2 - optimal equilateral triangle
         double radian = Math.toRadians(-15);
         dist = Math.cos(radian)*5;
         n = 3;
@@ -193,7 +193,7 @@ public class Player extends dogs.sim.Player {
         optimalShape = player.getOptimalLocationShape(n, dist);
         System.out.println(optimalShape);
 
-        // TEST 6 - optimal regular octogon
+        // TEST 6 - optimal regular octagon
         dist = Math.sqrt(10);
         n = 8;
         optimalShape = player.getOptimalLocationShape(n, dist);
