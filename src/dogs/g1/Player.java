@@ -60,7 +60,7 @@ public class Player extends dogs.sim.Player {
      *
      * @param myOwner      my owner
      * @param otherOwners  all other owners in the park
-     * @return             a directive for the owner's next move
+     * @return             park location to which the player will move in circle
      *
      */
     public ParkLocation getStartingLocation(Owner myOwner, List<Owner> otherOwners) {
