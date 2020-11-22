@@ -111,15 +111,15 @@ public class Player extends dogs.sim.Player {
             shape.add(new ParkLocation(0.0,dist));
         }
         else {
-            double radian = Math.toRadians(360.0/n);
-            double center = (dist/2)/(Math.sin(radian/2));
+            double radianStep = Math.toRadians(360.0/n);
+            double center = (dist/2)/(Math.sin(radianStep/2));
             double radius = center;
-            double tempRadian = Math.toRadians(135.0);
+            double radian = Math.toRadians(135.0);
             for (int i = 0; i < n; i++) {
-                double x = Math.cos(tempRadian) * radius + center;
-                double y = Math.sin(tempRadian) * radius + center;
+                double x = Math.cos(radian) * radius + center;
+                double y = Math.sin(radian) * radius + center;
                 shape.add(new ParkLocation(x,y));
-                tempRadian -= radian;
+                radian -= radianStep;
             }
         }
         return shape;
