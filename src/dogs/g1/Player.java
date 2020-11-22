@@ -47,6 +47,7 @@ public class Player extends dogs.sim.Player {
         if ((round-1)/5 < this.path.size()) {
             directive.instruction = Instruction.MOVE;
             directive.parkLocation = this.path.get((round-1)/5);
+            // maybe add a message saying we're still moving into position?
             return directive;
         }
         
