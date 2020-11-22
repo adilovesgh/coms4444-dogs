@@ -43,10 +43,10 @@ public class Player extends dogs.sim.Player {
             ParkLocation myLoc = getStartingLocation(myOwner, otherOwners);
             this.path = shortestPath(myLoc);
         }
-        // seems like there's a bug with round? Using (round-1)/5 for now
-        if ((round-1)/5 < this.path.size()) {
+        int roundWithAction = (round-1)/5;
+        if (roundWithAction < this.path.size()) {
             directive.instruction = Instruction.MOVE;
-            directive.parkLocation = this.path.get((round-1)/5);
+            directive.parkLocation = this.path.get(roundWithAction);
             // maybe add a message saying we're still moving into position?
             return directive;
         }
@@ -114,7 +114,7 @@ public class Player extends dogs.sim.Player {
             double radian = Math.toRadians(360.0/n);
             double center = (dist/2)/(Math.sin(radian/2));
             double radius = center;
-            double tempRadian = 0.0;
+            double tempRadian = Math.toRadians(135.0);
             for (int i = 0; i < n; i++) {
                 double x = Math.cos(tempRadian) * radius + center;
                 double y = Math.sin(tempRadian) * radius + center;
