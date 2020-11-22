@@ -140,11 +140,10 @@ public class Player extends dogs.sim.Player {
         
         double xStep = start.getRow()/magnitude;
         double yStep = start.getColumn()/magnitude;
-        double xTemp = 0;
-        double yTemp = 0;
+        double xTemp = xStep*5;
+        double yTemp = yStep*5;
         while (xTemp <= start.getRow() && yTemp <= start.getColumn()) {
-            if (xTemp != 0 || yTemp != 0)
-                path.add(new ParkLocation(xTemp, yTemp));
+            path.add(new ParkLocation(xTemp, yTemp));
             xTemp += xStep*5;
             yTemp += yStep*5;
         }
