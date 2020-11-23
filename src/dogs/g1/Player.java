@@ -3,13 +3,19 @@ package dogs.g1;
 import java.util.*;
 import java.lang.Math;
 
-import dogs.sim.*;
+import dogs.sim.Directive;
+import dogs.sim.Dog;
+import dogs.sim.Owner;
+import dogs.sim.Owner.OwnerName;
+import dogs.sim.SimPrinter;
+import dogs.sim.ParkLocation;
 import dogs.sim.Directive.Instruction;
 
 
 public class Player extends dogs.sim.Player {
+    private List<ParkLocation> path;
+    private Set<OwnerName> randos; 
     private final Double MAX_THROW_DIST = 40.0;
-    List<ParkLocation> path;
     private Owner passTo;
     private ParkLocation passToLoc;
 	
@@ -24,11 +30,12 @@ public class Player extends dogs.sim.Player {
      *
      */
      public Player(Integer rounds, Integer numDogsPerOwner, Integer numOwners, Integer seed, Random random, SimPrinter simPrinter) {
-         super(rounds, numDogsPerOwner, numOwners, seed, random, simPrinter);
-         this.path = new ArrayList<>();
-         this.passTo = null;
-         // TEMP: temp workaround for owner.getLocation() bug
-         this.passToLoc = null;
+        super(rounds, numDogsPerOwner, numOwners, seed, random, simPrinter);
+        this.path = new ArrayList<>();
+        this.randos = new HashSet<OwnerName>();
+        this.passTo = null;
+        // TEMP: temp workaround for owner.getLocation() bug
+        this.passToLoc = null;
      }
 
     /**
@@ -43,22 +50,43 @@ public class Player extends dogs.sim.Player {
     public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
         simPrinter.println(myOwner.getNameAsString() + ": " + myOwner.getLocation().toString());
         Directive directive = new Directive();
-        if (round == 1) {
+        if (round == 1) { // gets starting location, calls out name to find random players
             ParkLocation myLoc = getStartingLocation(myOwner, otherOwners);
             this.path = shortestPath(myLoc);
+            simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
+            directive.instruction = Instruction.CALL_SIGNAL;
+            directive.signalWord = myOwner.getNameAsString();
+            simPrinter.println(myOwner.getNameAsString() + " called out " + myOwner.getNameAsString() + " in round " + round);
+
+            // joseph: 
             this.passTo = getOwnerToPassTo(myOwner, otherOwners);
             simPrinter.print(myOwner.getNameAsString() + ": ");
             simPrinter.print("Loc: " + myLoc.toString() + ", ");
             simPrinter.println("PassTo: " + passTo.getNameAsString());
+            return directive;
         }
-        int roundWithAction = (round-1)/5;
+        else if (round == 6) { // fills ups randos to spot the random player 
+            for (Owner person : otherOwners) {
+                if (!(person.getCurrentSignal().equals(person.getNameAsString()))) 
+                    randos.add(person.getNameAsEnum());
+            }
+            for (OwnerName person : randos) {
+                simPrinter.println(person + " is a random player");
+            }
+        }
+        int roundWithAction = (round-1)/5 - 1;
         if (roundWithAction < this.path.size()) {
             directive.instruction = Instruction.MOVE;
             directive.parkLocation = this.path.get(roundWithAction);
             // maybe add a message saying we're still moving into position?
+            simPrinter.println(myOwner.getNameAsString() + " is moving to target location");
             return directive;
         }
 
+        // simPrinter.println(myOwner.getNameAsString() + " is at target location");
+        // if been moved to inital location 
+        // stay away from the random
+        
         return throwBall(myOwner, otherOwners);
     }
 
@@ -261,37 +289,37 @@ public class Player extends dogs.sim.Player {
         double dist = 2*Math.sqrt(2);
         int n = 2;
         List<ParkLocation> optimalShape = player.getOptimalLocationShape(n, dist);
-        System.out.println(optimalShape);
+        simPrinter.println(optimalShape);
 
         // TEST 2 - optimal equilateral triangle
         double radian = Math.toRadians(-15);
         dist = Math.cos(radian)*5;
         n = 3;
         optimalShape = player.getOptimalLocationShape(n, dist);
-        System.out.println(optimalShape);
+        simPrinter.println(optimalShape);
 
         // TEST 3 - optimal square
         dist = 2;
         n = 4;
         optimalShape = player.getOptimalLocationShape(n, dist);
-        System.out.println(optimalShape);
+        simPrinter.println(optimalShape);
 
         // TEST 4 - optimal regular pentagon
         dist = 3;
         n = 5;
         optimalShape = player.getOptimalLocationShape(n, dist);
-        System.out.println(optimalShape);
+        simPrinter.println(optimalShape);
 
         // TEST 5 - optimal regular hexagon
         dist = 5;
         n = 6;
         optimalShape = player.getOptimalLocationShape(n, dist);
-        System.out.println(optimalShape);
+        simPrinter.println(optimalShape);
 
         // TEST 6 - optimal regular octagon
         dist = Math.sqrt(10);
         n = 8;
         optimalShape = player.getOptimalLocationShape(n, dist);
-        System.out.println(optimalShape);
+        simPrinter.println(optimalShape);
     }
 }
