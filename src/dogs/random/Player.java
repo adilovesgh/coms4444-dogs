@@ -66,7 +66,7 @@ public class Player extends dogs.sim.Player {
 				break;
 			}
     		
-			randomDistance = random.nextDouble() * 40.0;
+			randomDistance = 40.0;
 			randomAngle = Math.toRadians(random.nextDouble() * 360);
 			double ballRow = myOwner.getLocation().getRow() + randomDistance * Math.sin(randomAngle);
 			double ballColumn = myOwner.getLocation().getColumn() + randomDistance * Math.cos(randomAngle);
@@ -113,7 +113,7 @@ public class Player extends dogs.sim.Player {
     	}
     	    	
 		return directive;
-    }
+	}
     
     private List<String> getOtherOwnersSignals(List<Owner> otherOwners) {
     	List<String> otherOwnersSignals = new ArrayList<>();
