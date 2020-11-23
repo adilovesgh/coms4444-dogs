@@ -14,20 +14,19 @@ import dogs.sim.SimPrinter;
 public class Player extends dogs.sim.Player {
 
 	private double listeningProbability = 0.2;
-
 	private Double targetColumn = 0.0;
 	private Double targetRow = 0.0;
-	
-    /**
-     * Player constructor
-     *
-     * @param rounds      	   number of rounds
-     * @param numDogsPerOwner  number of dogs per owner
-     * @param numOwners	  	   number of owners
-     * @param seed        	   random seed
-     * @param simPrinter  	   simulation printer
-     *
-     */
+
+	/**
+	* Player constructor
+	*
+	* @param rounds      	   number of rounds
+	* @param numDogsPerOwner  number of dogs per owner
+	* @param numOwners	  	   number of owners
+	* @param seed        	   random seed
+	* @param simPrinter  	   simulation printer
+	*
+	*/
 	public Player(Integer rounds, Integer numDogsPerOwner, Integer numOwners, Integer seed, Random random, SimPrinter simPrinter) {
 		super(rounds, numDogsPerOwner, numOwners, seed, random, simPrinter);
 	}
@@ -49,24 +48,25 @@ public class Player extends dogs.sim.Player {
 	////mode where we're done: help other owners, ignore our dogs
 
 
-    /**
-     * Choose command/directive for next round
-     *
-     * @param round        current round
-     * @param myOwner      my owner
-     * @param otherOwners  all other owners in the park
-     * @return             a directive for the owner's next move
-     *
-     */
-    public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
-		
+	/**
+	* Choose command/directive for next round
+	*
+	* @param round        current round
+	* @param myOwner      my owner
+	* @param otherOwners  all other owners in the park
+	* @return             a directive for the owner's next move
+	*
+	*/
+	public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
+
 		Directive directive = new Directive();
-	
+		List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
+
 		//first round: say group number, calc location
 		if(round == 1) {
 			directive.signalWord = "five";
 
-			//////todo 1
+		//////todo 1
 			List<Double> initialLocation = findLocation();
 			targetRow = initialLocation.get(0);
 			targetColumn = initialLocation.get(1);
@@ -74,10 +74,6 @@ public class Player extends dogs.sim.Player {
 			return directive;
 		}
 
-		
-
-		//get to target location //////todo 2
-		////calc slope, go towards it
 		if(myOwner.getLocation().getColumn() < targetColumn || myOwner.getLocation().getRow() < targetRow) {
 			simPrinter.println(myOwner.getLocation().toString());
 			double rowDelta = myOwner.getLocation().getRow() - targetRow;
@@ -93,25 +89,13 @@ public class Player extends dogs.sim.Player {
 			return directive;
 		}
 
-		//pt4:
-		//if done, leave the park
-
-		//////////todo 3
-		/////pt 1sort dogs, ignore dogs that aren't ours
-		//pt 2: direction that we through them
-		//pt 3: distance (hardcoded 9m)
-
-		List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
-
-		if(waitingDogs.size() > 0 && ){ 
+		if(waitingDogs.size() > 0){ 
 			directive.instruction = Instruction.THROW_BALL;
-			simPrinter.println(waitingDogs);
-			directive.dogToPlayWith = waitingDogs.get(random.nextInt(waitingDogs.size()));
+			directive.dogToPlayWith = getLeastTiredDog(waitingDogs);
 
 			double randomAngle = Math.toRadians(random.nextDouble() * 360);
 			double ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(randomAngle);
 			double ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(randomAngle);
-			simPrinter.println("THROW ROW: " + ballRow +  " THROW COLUMN: " + ballColumn);
 
 			if(ballRow < 0.0)
 				ballRow = 0.0;
@@ -121,89 +105,102 @@ public class Player extends dogs.sim.Player {
 				ballColumn = 0.0;
 			if(ballColumn > ParkLocation.PARK_SIZE - 1)
 				ballColumn = ParkLocation.PARK_SIZE - 1;
-			
+
 			directive.parkLocation = new ParkLocation(ballRow, ballColumn);
-		} else {
-				
 		}
-    	    	
+
 		return directive;
-    }
+	}
 
-    //go to a random place away from random player, edges, and center
-    private List<Double> findLocation() {
-        List<Double> coordinates = new ArrayList<>();
+	private List<Double> findLocation() {
+		List<Double> coordinates = new ArrayList<>();
 
-        double colVal = 100.0;
-        double rowVal = 100.0;
+		double colVal = 100.0;
+		double rowVal = 100.0;
 
 
-        //random offset between 25 and 75
-        double varColOffset = random.nextInt(5000)/100.0 + 25;
-        double varRowOffset = random.nextInt(5000)/100.0 + 25;
+		double varColOffset = random.nextInt(5000)/100.0 + 25;
+		double varRowOffset = random.nextInt(5000)/100.0 + 25;
 
-        //randomly add or subtract offset
-        if(random.nextInt(2) == 0) {
-            colVal += varColOffset;
+		if(random.nextInt(2) == 0) {
+			colVal += varColOffset;
 
-            if(random.nextInt(2) == 1) {
-                rowVal += varRowOffset;
-            }
-            else {
-                rowVal -= varRowOffset;
-            }
-            
-        }
-        else {
-            rowVal += varRowOffset;
+			if(random.nextInt(2) == 1) {
+				rowVal += varRowOffset;
+			}
+			else {
+				rowVal -= varRowOffset;
+			}
 
-            if(random.nextInt(2) == 1) {
-                colVal += varColOffset;
-            }
-            else {
-                colVal -= varColOffset;
-            }
+		}
+		else {
+			rowVal += varRowOffset;
 
-        }
+			if(random.nextInt(2) == 1) {
+				colVal += varColOffset;
+			}
+			else {
+				colVal -= varColOffset;
+			}
 
-        coordinates.add(rowVal);
-        coordinates.add(colVal);
+		}
 
-        simPrinter.println("row is " + rowVal);
-        simPrinter.println("col is " + colVal);
+		coordinates.add(rowVal);
+		coordinates.add(colVal);
 
-        return coordinates;
-    }
+		return coordinates;
+	}
 
-    private List<String> pickNeedyDog(List<Owner> otherOwners) {
-    	List<String> otherOwnersSignals = new ArrayList<>();
-    	for(Owner otherOwner : otherOwners)
-    		if(!otherOwner.getCurrentSignal().equals("_"))
-    			otherOwnersSignals.add(otherOwner.getCurrentSignal());
-    	return otherOwnersSignals;
-    }
-    
-    private List<String> getOtherOwnersSignals(List<Owner> otherOwners) {
-    	List<String> otherOwnersSignals = new ArrayList<>();
-    	for(Owner otherOwner : otherOwners)
-    		if(!otherOwner.getCurrentSignal().equals("_"))
-    			otherOwnersSignals.add(otherOwner.getCurrentSignal());
-    	return otherOwnersSignals;
-    }
-    
-    private List<Dog> getWaitingDogs(Owner myOwner, List<Owner> otherOwners) {
-    	List<Dog> waitingDogs = new ArrayList<>();
-    	for(Dog dog : myOwner.getDogs()) {
-    		if(dog.isWaitingForItsOwner())
-    			waitingDogs.add(dog);
-    	}
-    	/*
-    	for(Owner otherOwner : otherOwners) {
-    		for(Dog dog : otherOwner.getDogs()) {
-    			if(dog.isWaitingForOwner(myOwner))
-    				waitingDogs.add(dog);
-    		}
-    	}*/
-    	return waitingDogs;
-    }
+	private Dog getLeastTiredDog(List<Dog> allDogs) {
+		Double timeLeft = 0.0;
+		Dog mostTiredDog = null; 
+		for (Dog dog : allDogs){
+			if (dog.getExerciseTimeRemaining() > timeLeft){
+				mostTiredDog = dog;
+				timeLeft = dog.getExerciseTimeRemaining();
+			}
+		}
+		simPrinter.println("DOG NEEDS: " + mostTiredDog.getExerciseTimeRemaining());
+		return mostTiredDog;
+	}
+
+	private boolean dogIsDone(Dog dog){
+		if (dog.getExerciseTimeRemaining() == 0.0)
+			return true;
+		else 
+			return false;
+	}
+
+	//private boolean allDogsWaiting(List<Dog>))
+
+	private boolean allDogsDone(List<Dog> allDogs){
+		for (Dog dog : allDogs){
+			if (dog.getExerciseTimeRemaining() > 0.0)
+				return false;
+		}
+		return true;
+	}
+
+	private List<String> getOtherOwnersSignals(List<Owner> otherOwners) {
+		List<String> otherOwnersSignals = new ArrayList<>();
+		for(Owner otherOwner : otherOwners)
+			if(!otherOwner.getCurrentSignal().equals("_"))
+				otherOwnersSignals.add(otherOwner.getCurrentSignal());
+			return otherOwnersSignals;
+		}
+
+	private List<Dog> getWaitingDogs(Owner myOwner, List<Owner> otherOwners) {
+		List<Dog> waitingDogs = new ArrayList<>();
+
+		for(Dog dog : myOwner.getDogs()) 
+			if(dog.isWaitingForItsOwner())
+				waitingDogs.add(dog);
+
+		for(Owner otherOwner : otherOwners)
+			for(Dog dog : otherOwner.getDogs()) 
+				if(dog.isWaitingForOwner(myOwner))
+					waitingDogs.add(dog);
+	
+		return waitingDogs;
+	}
 }
