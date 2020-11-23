@@ -334,7 +334,7 @@ public class Simulator {
 						}
 						if(instruction.equals(Instruction.CALL_SIGNAL)) {
 							String signal = directive.signalWord;
-							if(Dictionary.isInDictionary(signal)) {
+							if(Dictionary.isInDictionary(signal.toLowerCase())) {
 								owner.setCurrentSignal(signal);
 								Log.writeToVerboseLogFile("Owner " + owner.getNameAsString() + "'s signal word: \"" + signal + "\"");								
 							}

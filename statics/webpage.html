@@ -353,14 +353,14 @@
           signalsAdded = true;
 
           var signalsText = "";
-          for(var i = 0; i < signals.length; i++) {
+          for(var i = Math.max(0, signals.length - 20); i < signals.length; i++) {
               var signal = signals[i];
               var ownerName = signal.owner;
               var word = signal.word;
               var round = signal.round;
               var fullDate = signal.date;
               var fullTime = signal.time;
-              signalsText += `<a style="color:blue">${fullDate} ${fullTime}:</a>owner ${ownerName} signalled<a style="color:green">${word}</a>during round ${round}\n`;
+              signalsText += `<a style="color:blue">${fullDate} ${fullTime}:</a>owner ${ownerName} signalled<a style="color:green">${word}</a>during round ${round}</br>`;
           }
 
           signalNode.getElementsByClassName('signals-gid')[0].innerHTML = signalsText;

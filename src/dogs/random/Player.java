@@ -55,7 +55,7 @@ public class Player extends dogs.sim.Player {
     	Instruction chosenInstruction = instructions.get(instructionIndex);
     	directive.instruction = chosenInstruction;
     	    	
-    	double randomDistance, randomAngle;    	
+    	double randomDistance, randomAngle;
     	switch(chosenInstruction) {
     	case THROW_BALL:
 			List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
