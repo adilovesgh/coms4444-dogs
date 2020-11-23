@@ -5,13 +5,15 @@ import java.lang.Math;
 
 import dogs.sim.Directive;
 import dogs.sim.Owner;
+import dogs.sim.Owner.OwnerName;
 import dogs.sim.SimPrinter;
 import dogs.sim.ParkLocation;
 import dogs.sim.Directive.Instruction;
 
 
 public class Player extends dogs.sim.Player {
-    List<ParkLocation> path;
+    private List<ParkLocation> path;
+    private Set<OwnerName> randos; 
 	
     /**
      * Player constructor
@@ -24,8 +26,9 @@ public class Player extends dogs.sim.Player {
      *
      */
      public Player(Integer rounds, Integer numDogsPerOwner, Integer numOwners, Integer seed, Random random, SimPrinter simPrinter) {
-         super(rounds, numDogsPerOwner, numOwners, seed, random, simPrinter);
-         this.path = new ArrayList<>();
+        super(rounds, numDogsPerOwner, numOwners, seed, random, simPrinter);
+        this.path = new ArrayList<>();
+        this.randos = new HashSet<OwnerName>();
      }
 
     /**
@@ -39,19 +42,36 @@ public class Player extends dogs.sim.Player {
      */
     public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
         Directive directive = new Directive();
-        if (round == 1) {
+        if (round == 1) { // gets starting location, calls out name to find random players
             ParkLocation myLoc = getStartingLocation(myOwner, otherOwners);
             this.path = shortestPath(myLoc);
+            simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
+            directive.instruction = Instruction.CALL_SIGNAL;
+            directive.signalWord = myOwner.getNameAsString();
+            simPrinter.println(myOwner.getNameAsString() + " called out " + myOwner.getNameAsString() + " in round " + round);
+            return directive;
         }
-        int roundWithAction = (round-1)/5;
+        else if (round == 6) { // fills ups randos to spot the random player 
+            for (Owner person : otherOwners) {
+                if (!(person.getCurrentSignal().equals(person.getNameAsString()))) 
+                    randos.add(person.getNameAsEnum());
+            }
+            for (OwnerName person : randos) {
+                simPrinter.println(person + " is a random player");
+            }
+        }
+        int roundWithAction = (round-1)/5 - 1;
         if (roundWithAction < this.path.size()) {
             directive.instruction = Instruction.MOVE;
             directive.parkLocation = this.path.get(roundWithAction);
             // maybe add a message saying we're still moving into position?
+            simPrinter.println(myOwner.getNameAsString() + " is moving to target location");
             return directive;
         }
+        simPrinter.println(myOwner.getNameAsString() + " is at target location");
         
-    	// TODO add your code here to choose a directive
+        // if been moved to inital location 
+        // stay away from the random
         return directive;
     }
 
