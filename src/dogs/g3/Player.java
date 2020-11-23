@@ -47,7 +47,6 @@ public class Player extends dogs.sim.Player {
 		this.otherOwners = otherOwners;
 		this.myOwner = myOwner;
 
-		sortDogs();
 		sortOwners();
 
     	Directive directive = new Directive();
@@ -56,72 +55,42 @@ public class Player extends dogs.sim.Player {
     		directive.instruction = Instruction.MOVE;
     		directive.parkLocation = new ParkLocation(myOwner.getLocation().getRow() + 2, myOwner.getLocation().getColumn() + 2);
     		return directive;
-    	}
+		}
+		else if (round <= 271) {
+			directive.instruction = Instruction.MOVE;
+    		directive.parkLocation = new ParkLocation(myOwner.getLocation().getRow(), myOwner.getLocation().getColumn() + 2);
+    		return directive;
+		}
     	
-    	List<Instruction> instructions = new ArrayList<>(Arrays.asList(Instruction.values()));
-    	instructions.remove(Instruction.EXIT_PARK);
 
-    	int instructionIndex = random.nextInt(instructions.size());
-    	Instruction chosenInstruction = instructions.get(instructionIndex);
-    	directive.instruction = chosenInstruction;
-    	    	
-    	double randomDistance, randomAngle;    	
-    	switch(chosenInstruction) {
-    	case THROW_BALL:
-			List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
-			if(waitingDogs.size() > 0)
-				directive.dogToPlayWith = waitingDogs.get(random.nextInt(waitingDogs.size()));
-			else {
-				directive.instruction = Instruction.NOTHING;
-				break;
+		List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
+
+		List<Dog> notOwnedByMe = new LinkedList<Dog>();
+
+		for (Dog dog: waitingDogs) {
+			if (dog.getOwner() != this.myOwner) {
+				notOwnedByMe.add(dog);
 			}
-    		
-			randomDistance = 40.0;
-			randomAngle = Math.toRadians(random.nextDouble() * 360);
-			double ballRow = myOwner.getLocation().getRow() + randomDistance * Math.sin(randomAngle);
-			double ballColumn = myOwner.getLocation().getColumn() + randomDistance * Math.cos(randomAngle);
-			if(ballRow < 0.0)
-				ballRow = 0.0;
-			if(ballRow > ParkLocation.PARK_SIZE - 1)
-				ballRow = ParkLocation.PARK_SIZE - 1;
-			if(ballColumn < 0.0)
-				ballColumn = 0.0;
-			if(ballColumn > ParkLocation.PARK_SIZE - 1)
-				ballColumn = ParkLocation.PARK_SIZE - 1;
-			directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+		}
 
-			break;
-    	case MOVE:
-			randomDistance = random.nextDouble() * 5.0;
-			randomAngle = Math.toRadians(random.nextDouble() * 360);
-			double newOwnerRow = myOwner.getLocation().getRow() + randomDistance * Math.sin(randomAngle);
-			double newOwnerColumn = myOwner.getLocation().getColumn() + randomDistance * Math.cos(randomAngle);
-			if(newOwnerRow < 0.0)
-				newOwnerRow = 0.0;
-			if(newOwnerRow > ParkLocation.PARK_SIZE - 1)
-				newOwnerRow = ParkLocation.PARK_SIZE - 1;
-			if(newOwnerColumn < 0.0)
-				newOwnerColumn = 0.0;
-			if(newOwnerColumn > ParkLocation.PARK_SIZE - 1)
-				newOwnerColumn = ParkLocation.PARK_SIZE - 1;
-			directive.parkLocation = new ParkLocation(newOwnerRow, newOwnerColumn);			
-    		break;
-    	case CALL_SIGNAL:
-    		List<String> otherOwnersPrevRoundWords = getOtherOwnersSignals(otherOwners);
-    		
-    		List<String> words = Dictionary.words;
-        	words.remove("_");
-        	if(random.nextInt(10) < 10 * listeningProbability && !otherOwnersPrevRoundWords.isEmpty())
-        		directive.signalWord = otherOwnersPrevRoundWords.get(random.nextInt(otherOwnersPrevRoundWords.size()));
-        	else
-        		directive.signalWord = words.get(random.nextInt(words.size()));
-    		break;
-    	case NOTHING:
-    		break;
-		default:
-			break;
-    	}
-    	    	
+
+		List<Dog> sortedDogs = sortDogs(notOwnedByMe);
+		directive.dogToPlayWith = sortedDogs.get(0);
+		directive.instruction = Instruction.MOVE;
+		Owner throwOwner = this.otherOwners.get(0);
+		
+		double ballRow = throwOwner.getLocation().getRow();
+		double ballColumn = throwOwner.getLocation().getColumn();
+		if(ballRow < 0.0)
+			ballRow = 0.0;
+		if(ballRow > ParkLocation.PARK_SIZE - 1)
+			ballRow = ParkLocation.PARK_SIZE - 1;
+		if(ballColumn < 0.0)
+			ballColumn = 0.0;
+		if(ballColumn > ParkLocation.PARK_SIZE - 1)
+			ballColumn = ParkLocation.PARK_SIZE - 1;
+		directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+
 		return directive;
 	}
     
@@ -149,13 +118,14 @@ public class Player extends dogs.sim.Player {
 	}
 
 	/* SORTING */
-	private void sortDogs(){
-		Collections.sort(this.myDogs, new Comparator<Dog>() {
+	private List<Dog> sortDogs(List<Dog> dogList){
+		Collections.sort(dogList, new Comparator<Dog>() {
 			@Override
 			public int compare(Dog u1, Dog u2) {
 			  return compareDogs(u1, u2);
 			}
 		  });
+		return dogList;
 	}
 
 	private int compareDogs(Dog u1, Dog u2){
