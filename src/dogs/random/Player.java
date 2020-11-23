@@ -66,7 +66,7 @@ public class Player extends dogs.sim.Player {
 				break;
 			}
     		
-			randomDistance = 40.0;
+			randomDistance = random.nextDouble() * 40.0;
 			randomAngle = Math.toRadians(random.nextDouble() * 360);
 			double ballRow = myOwner.getLocation().getRow() + randomDistance * Math.sin(randomAngle);
 			double ballColumn = myOwner.getLocation().getColumn() + randomDistance * Math.cos(randomAngle);
