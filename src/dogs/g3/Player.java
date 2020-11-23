@@ -124,11 +124,11 @@ public class Player extends dogs.sim.Player {
 				return directive;
 			}
 
-			//if its owner is >40 distance away, throw the ball randomly
-			double randomDistance = 40.0;
-			double randomAngle = Math.toRadians(random.nextDouble() * 360);
-			double ballRow = myOwner.getLocation().getRow() + randomDistance * Math.sin(randomAngle);
-			double ballColumn = myOwner.getLocation().getColumn() + randomDistance * Math.cos(randomAngle);
+			//if its owner is >40 distance away, throw the ball in its owner's direction for 40 meters
+			double dx = throwOwner.getLocation().getRow() - myOwner.getLocation().getRow();
+			double dy = throwOwner.getLocation().getColumn() - myOwner.getLocation().getColumn();
+			double ballRow = myOwner.getLocation().getRow() + dx * (40.0/dist);
+			double ballColumn = myOwner.getLocation().getColumn() + dy * (40.0/dist);
 			if(ballRow < 0.0)
 				ballRow = 0.0;
 			if(ballRow > ParkLocation.PARK_SIZE - 1)
