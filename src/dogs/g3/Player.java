@@ -63,34 +63,86 @@ public class Player extends dogs.sim.Player {
 		}
     	
 
+		//get waiting dogs and separate into others' dogs and my own dogs
 		List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
-
 		List<Dog> notOwnedByMe = new LinkedList<Dog>();
-
+		List<Dog> ownedByMe = new LinkedList<Dog>();
 		for (Dog dog: waitingDogs) {
 			if (dog.getOwner() != this.myOwner) {
 				notOwnedByMe.add(dog);
+			} else {
+				ownedByMe.add(dog);
 			}
 		}
-
-
-		List<Dog> sortedDogs = sortDogs(notOwnedByMe);
-		directive.dogToPlayWith = sortedDogs.get(0);
-		directive.instruction = Instruction.MOVE;
-		Owner throwOwner = this.otherOwners.get(0);
 		
-		double ballRow = throwOwner.getLocation().getRow();
-		double ballColumn = throwOwner.getLocation().getColumn();
-		if(ballRow < 0.0)
-			ballRow = 0.0;
-		if(ballRow > ParkLocation.PARK_SIZE - 1)
-			ballRow = ParkLocation.PARK_SIZE - 1;
-		if(ballColumn < 0.0)
-			ballColumn = 0.0;
-		if(ballColumn > ParkLocation.PARK_SIZE - 1)
-			ballColumn = ParkLocation.PARK_SIZE - 1;
-		directive.parkLocation = new ParkLocation(ballRow, ballColumn);
 
+		//if any of my own dogs are waiting, throw the ball for the least exercised dog to some other owner
+		if (!ownedByMe.isEmpty()){
+			directive.instruction = Instruction.THROW_BALL;
+			List<Dog> sortedMyDogs = sortDogs(ownedByMe);
+			directive.dogToPlayWith = sortedMyDogs.get(0);
+			for (Owner throwOwner : this.otherOwners){
+				Double dist = distanceBetweenOwners(throwOwner, this.myOwner);
+				//System.out.println(dist);
+				if (dist < 40) {
+					Double ballRow = throwOwner.getLocation().getRow();
+					Double ballColumn = throwOwner.getLocation().getColumn();
+					directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+					return directive;
+				}
+			}
+
+			//if all other owners are >40 distance away, throw the ball randomly
+			double randomDistance = 40.0;
+			double randomAngle = Math.toRadians(random.nextDouble() * 360);
+			double ballRow = myOwner.getLocation().getRow() + randomDistance * Math.sin(randomAngle);
+			double ballColumn = myOwner.getLocation().getColumn() + randomDistance * Math.cos(randomAngle);
+			if(ballRow < 0.0)
+				ballRow = 0.0;
+			if(ballRow > ParkLocation.PARK_SIZE - 1)
+				ballRow = ParkLocation.PARK_SIZE - 1;
+			if(ballColumn < 0.0)
+				ballColumn = 0.0;
+			if(ballColumn > ParkLocation.PARK_SIZE - 1)
+				ballColumn = ParkLocation.PARK_SIZE - 1;
+			directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+			return directive;
+			
+		}
+
+		//if any of the others' dogs is waiting, throw the ball back to its owner
+		if (!ownedByMe.isEmpty()) {
+			directive.instruction = Instruction.THROW_BALL;
+			List<Dog> sortedOtherDogs = sortDogs(notOwnedByMe);
+			directive.dogToPlayWith = sortedOtherDogs.get(0);
+			Owner throwOwner = directive.dogToPlayWith.getOwner();
+			Double dist = distanceBetweenOwners(throwOwner, this.myOwner);
+			if (dist < 40) {
+				Double ballRow = throwOwner.getLocation().getRow();
+				Double ballColumn = throwOwner.getLocation().getColumn();
+				directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+				return directive;
+			}
+
+			//if its owner is >40 distance away, throw the ball randomly
+			double randomDistance = 40.0;
+			double randomAngle = Math.toRadians(random.nextDouble() * 360);
+			double ballRow = myOwner.getLocation().getRow() + randomDistance * Math.sin(randomAngle);
+			double ballColumn = myOwner.getLocation().getColumn() + randomDistance * Math.cos(randomAngle);
+			if(ballRow < 0.0)
+				ballRow = 0.0;
+			if(ballRow > ParkLocation.PARK_SIZE - 1)
+				ballRow = ParkLocation.PARK_SIZE - 1;
+			if(ballColumn < 0.0)
+				ballColumn = 0.0;
+			if(ballColumn > ParkLocation.PARK_SIZE - 1)
+				ballColumn = ParkLocation.PARK_SIZE - 1;
+			directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+			return directive;
+		}
+
+		// otherwise do nothing
+		directive.instruction = Instruction.NOTHING;
 		return directive;
 	}
     
@@ -149,6 +201,13 @@ public class Player extends dogs.sim.Player {
 		distanceToOwner2 += Math.pow(u2.getLocation().getColumn() - this.myOwner.getLocation().getColumn(), 2);
 
 		return distanceToOwner2.compareTo(distanceToOwner1);
+	}
+
+	private Double distanceBetweenOwners(Owner u1, Owner u2){
+		Double dX = u1.getLocation().getRow() - u2.getLocation().getRow();
+		Double dY = u1.getLocation().getColumn() - u2.getLocation().getColumn();
+		Double dist = Math.sqrt(dX * dX + dY * dY);
+		return dist;
 	}
 
 }
