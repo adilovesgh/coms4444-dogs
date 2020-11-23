@@ -1,17 +1,17 @@
 package dogs.g1;
 
 import java.util.*;
-import java.lang.Math; 
+import java.lang.Math;
 
-import dogs.sim.Directive;
-import dogs.sim.Owner;
-import dogs.sim.SimPrinter;
-import dogs.sim.ParkLocation;
+import dogs.sim.*;
 import dogs.sim.Directive.Instruction;
 
 
 public class Player extends dogs.sim.Player {
+    private final Double MAX_THROW_DIST = 40.0;
     List<ParkLocation> path;
+    private Owner passTo;
+    private ParkLocation passToLoc;
 	
     /**
      * Player constructor
@@ -26,6 +26,9 @@ public class Player extends dogs.sim.Player {
      public Player(Integer rounds, Integer numDogsPerOwner, Integer numOwners, Integer seed, Random random, SimPrinter simPrinter) {
          super(rounds, numDogsPerOwner, numOwners, seed, random, simPrinter);
          this.path = new ArrayList<>();
+         this.passTo = null;
+         // TEMP: temp workaround for owner.getLocation() bug
+         this.passToLoc = null;
      }
 
     /**
@@ -38,10 +41,15 @@ public class Player extends dogs.sim.Player {
      *
      */
     public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
+        simPrinter.println(myOwner.getNameAsString() + ": " + myOwner.getLocation().toString());
         Directive directive = new Directive();
         if (round == 1) {
             ParkLocation myLoc = getStartingLocation(myOwner, otherOwners);
             this.path = shortestPath(myLoc);
+            this.passTo = getOwnerToPassTo(myOwner, otherOwners);
+            simPrinter.print(myOwner.getNameAsString() + ": ");
+            simPrinter.print("Loc: " + myLoc.toString() + ", ");
+            simPrinter.println("PassTo: " + passTo.getNameAsString());
         }
         int roundWithAction = (round-1)/5;
         if (roundWithAction < this.path.size()) {
@@ -50,9 +58,8 @@ public class Player extends dogs.sim.Player {
             // maybe add a message saying we're still moving into position?
             return directive;
         }
-        
-    	// TODO add your code here to choose a directive
-        return directive;
+
+        return throwBall(myOwner, otherOwners);
     }
 
     /**
@@ -77,6 +84,13 @@ public class Player extends dogs.sim.Player {
         Collections.sort(ownerNames);
         int myIndex = ownerNames.indexOf(myName);
         ParkLocation myLoc = optimalStartingLocations.get(myIndex);
+        // TEMP: temp workaround for getLocations bug
+        if (myIndex == 0) {
+            this.passToLoc = optimalStartingLocations.get(optimalStartingLocations.size() -1);
+        }
+        else {
+            this.passToLoc = optimalStartingLocations.get(myIndex - 1);
+        }
         return myLoc;
     }
 
@@ -153,6 +167,88 @@ public class Player extends dogs.sim.Player {
 
     public double euclideanDistance(double x, double y) {
         return Math.sqrt(Math.pow(x,2)+Math.pow(y,2));
+    }
+
+    public Double distanceBetweenTwoPoints(ParkLocation p1, ParkLocation p2) {
+        Double x1 = p1.getColumn();
+        Double y1 = p1.getRow();
+        Double x2 = p2.getColumn();
+        Double y2 = p2.getRow();
+
+        return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2));
+    }
+
+    private Directive throwBall(Owner myOwner, List<Owner> otherOwners) {
+        Directive directive = new Directive();
+        directive.instruction = Instruction.NOTHING;
+
+        List<Dog> waitingDogs = getAllWaitingDogs(myOwner, otherOwners);
+        simPrinter.println(myOwner.getNameAsString() + ": " + waitingDogs.size());
+        if (waitingDogs.size() > 0) {
+            directive.dogToPlayWith = waitingDogs.get(0);
+            directive.instruction = Instruction.THROW_BALL;
+            // TEMP:
+            directive.parkLocation = passToLoc;//passTo.getLocation();
+        }
+
+        simPrinter.print(myOwner.getNameAsString() + " is throwing to ");
+        simPrinter.print(passTo.getNameAsString() + " at ");
+        simPrinter.println(passToLoc);
+        return directive;
+    }
+
+    // TEMP: owner.getLocation kept returning (0,0) so made this as a temp workaround
+    private ParkLocation getOwnerLocation(Owner owner, List<Owner> owners) {
+        Owner.OwnerName ownerName = owner.getNameAsEnum();
+        for (Owner o: owners) {
+            if (o.getNameAsEnum() == ownerName) {
+                return o.getLocation();
+            }
+        }
+        simPrinter.println("COULDN'T FIND MATCH");
+        return owner.getLocation();
+    }
+
+    private List<Dog> getAllWaitingDogs(Owner myOwner, List<Owner> otherOwners) {
+        List<Dog> allWaitingDogs = new ArrayList<>();
+
+        for (Dog dog: myOwner.getDogs()) {
+            if (dog.isWaitingForOwner(myOwner)) {
+                allWaitingDogs.add(dog);
+            }
+        }
+
+        for (Owner otherOwner: otherOwners) {
+            for (Dog dog: otherOwner.getDogs()) {
+                if (dog.isWaitingForOwner(myOwner)) {
+                    allWaitingDogs.add(dog);
+                }
+            }
+        }
+        return allWaitingDogs;
+    }
+
+    private Owner getOwnerToPassTo(Owner myOwner, List<Owner> otherOwners) {
+        // filter out owners further than 40m
+        /*otherOwners.removeIf(otherOwner ->
+                distanceBetweenTwoPoints(owner.getLocation(), otherOwner.getLocation()) > MAX_THROW_DIST);
+        return new Owner();*/
+        List<String> ownerNames = new ArrayList<>();
+        Map<String, Owner> ownersMap = new HashMap<>();
+        String myName = myOwner.getNameAsString();
+        ownerNames.add(myName);
+
+        for (Owner owner: otherOwners) {
+            ownerNames.add(owner.getNameAsString());
+            ownersMap.put(owner.getNameAsString(), owner);
+        }
+
+        Collections.sort(ownerNames);
+        int myIndex = ownerNames.indexOf(myName);
+        if (myIndex == 0) {
+            return ownersMap.get(ownerNames.get(ownerNames.size() - 1));
+        }
+        return ownersMap.get(ownerNames.get(myIndex - 1));
     }
 
     // Testing - run with "java dogs/g1/Player.java" in src folder
