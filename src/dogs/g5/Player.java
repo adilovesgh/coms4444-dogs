@@ -68,19 +68,26 @@ public class Player extends dogs.sim.Player {
 
 			//////todo 1
 			List<Double> initialLocation = findLocation();
-			targetColumn = initialLocation.get(0);
-			targetRow = initialLocation.get(1);
+			targetRow = initialLocation.get(0);
+			targetColumn = initialLocation.get(1);
 
 			return directive;
 		}
 
 		//get to target location //////todo 2
 		////calc slope, go towards it
-		if(myOwner.getLocation().getColumn() < targetColumn) {
+		if(myOwner.getLocation().getColumn() < targetColumn || myOwner.getLocation().getRow() < targetRow) {
+            double rowDelta = myOwner.getLocation().getRow() - targetRow;
+            double colDelta = myOwner.getLocation().getColumn() - targetColumn;
 
-		}
+            double angle = Math.atan(rowDelta/colDelta);
 
-		if(myOwner.getLocation().getRow() < targetRow) {
+            double scaledRow = 4.99*Math.sin(angle);
+            double scaledCol = 4.99*Math.cos(angle);
+
+            directive.instruction = Instruction.MOVE;
+    		directive.parkLocation = new ParkLocation(myOwner.getLocation().getRow() + scaledRow, myOwner.getLocation().getColumn() + scaledCol);
+    		return directive;
 
 		}
 
@@ -101,7 +108,7 @@ public class Player extends dogs.sim.Player {
     	
     	/*if(round <= 151) {
     		directive.instruction = Instruction.MOVE;
-    		directive.parkLocation = new ParkLocation(myOwner.getLocation().getRow() + 2, myOwner.getLocation().getColumn() + 2);
+    		directive.parkLocation = new ParkLocation(myOwner.getLocation().getRow() + 6, myOwner.getLocation().getColumn() + 6);
     		return directive;
     	}
     	
@@ -170,6 +177,51 @@ public class Player extends dogs.sim.Player {
     	}*/
     	    	
 		return directive;
+    }
+
+    //go to a random place away from random player, edges, and center
+    private List<Double> findLocation() {
+        List<Double> coordinates = new ArrayList<>();
+
+        double colVal = 100.0;
+        double rowVal = 100.0;
+
+
+        //random offset between 25 and 75
+        double varColOffset = random.nextInt(5000)/100.0 + 25;
+        double varRowOffset = random.nextInt(5000)/100.0 + 25;
+
+        //randomly add or subtract offset
+        if(random.nextInt(2) == 0) {
+            colVal += varColOffset;
+
+            if(random.nextInt(2) == 1) {
+                rowVal += varRowOffset;
+            }
+            else {
+                rowVal -= varRowOffset;
+            }
+            
+        }
+        else {
+            rowVal += varRowOffset;
+
+            if(random.nextInt(2) == 1) {
+                colVal += varColOffset;
+            }
+            else {
+                colVal -= varColOffset;
+            }
+
+        }
+
+        coordinates.add(rowVal);
+        coordinates.add(colVal);
+
+        System.out.println("row is " + rowVal);
+        System.out.println("col is " + colVal);
+
+        return coordinates;
     }
     
     private List<String> getOtherOwnersSignals(List<Owner> otherOwners) {
