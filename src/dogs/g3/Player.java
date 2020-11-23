@@ -159,24 +159,16 @@ public class Player extends dogs.sim.Player {
 	}
 
 	private int compareDogs(Dog u1, Dog u2){
-		Double distanceToDog1 = Math.pow(u1.getLocation().getRow() - this.myOwner.getLocation().getRow(), 2);
-		distanceToDog1 += Math.pow(u1.getLocation().getColumn() - this.myOwner.getLocation().getColumn(), 2);
-
-		Double distanceToDog2 = Math.pow(u2.getLocation().getRow() - this.myOwner.getLocation().getRow(), 2);
-		distanceToDog2 += Math.pow(u2.getLocation().getColumn() - this.myOwner.getLocation().getColumn(), 2);
-
-		return distanceToDog1.compareTo(distanceToDog2);
+		return u2.getExerciseTimeRemaining().compareTo(u1.getExerciseTimeRemaining());
 	}
 
 	private void sortOwners(){
-		System.out.println(this.otherOwners.toString());
 		Collections.sort(this.otherOwners, new Comparator<Owner>() {
 			@Override
 			public int compare(Owner u1, Owner u2) {
 			  return compareOwners(u1, u2);
 			}
 		  });
-		System.out.println(this.otherOwners.toString());
 	}
 
 	private int compareOwners(Owner u1, Owner u2){
@@ -186,7 +178,7 @@ public class Player extends dogs.sim.Player {
 		Double distanceToOwner2 = Math.pow(u2.getLocation().getRow() - this.myOwner.getLocation().getRow(), 2);
 		distanceToOwner2 += Math.pow(u2.getLocation().getColumn() - this.myOwner.getLocation().getColumn(), 2);
 
-		return distanceToOwner1.compareTo(distanceToOwner2);
+		return distanceToOwner2.compareTo(distanceToOwner1);
 	}
 
 }
