@@ -89,6 +89,8 @@ public class Player extends dogs.sim.Player {
 				if (dist < 40) {
 					Double ballRow = throwOwner.getLocation().getRow();
 					Double ballColumn = throwOwner.getLocation().getColumn();
+					Random r = new Random();
+					ballRow += r.nextInt(5 + 5) - 5;
 					directive.parkLocation = new ParkLocation(ballRow, ballColumn);
 					return directive;
 				}
@@ -122,6 +124,8 @@ public class Player extends dogs.sim.Player {
 			if (dist < 40) {
 				Double ballRow = throwOwner.getLocation().getRow();
 				Double ballColumn = throwOwner.getLocation().getColumn();
+				Random r = new Random();
+				ballRow += r.nextInt(5 + 5) - 5;
 				directive.parkLocation = new ParkLocation(ballRow, ballColumn);
 				return directive;
 			}
