@@ -1,5 +1,5 @@
 package dogs.g3;
-
+import dogs.g3.PlayerGraph;
 import java.util.*;
 
 import dogs.sim.Directive;
@@ -46,7 +46,9 @@ public class Player extends dogs.sim.Player {
 		this.myDogs = myOwner.getDogs();
 		this.otherOwners = otherOwners;
 		this.myOwner = myOwner;
-
+		List<Owner> allOwners = otherOwners;
+		allOwners.add(myOwner);
+		PlayerGraph g = new PlayerGraph(allOwners);
 		sortOwners();
 
     	Directive directive = new Directive();
