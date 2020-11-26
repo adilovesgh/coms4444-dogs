@@ -51,28 +51,31 @@ public class Player extends dogs.sim.Player {
         simPrinter.println(myOwner.getNameAsString() + ": " + myOwner.getLocation().toString());
         Directive directive = new Directive();
         if (round == 1) { // gets starting location, calls out name to find random players
-            ParkLocation myLoc = getStartingLocation(myOwner, otherOwners);
-            this.path = shortestPath(myLoc);
-            simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
             directive.instruction = Instruction.CALL_SIGNAL;
             directive.signalWord = myOwner.getNameAsString();
             simPrinter.println(myOwner.getNameAsString() + " called out " + myOwner.getNameAsString() + " in round " + round);
-
+            return directive;
+        }
+        else if (round == 6) { // fills ups randos to spot the random player, make starting config with nonrandom players
+            List<Owner> nonRandos = new ArrayList<>();
+            for (Owner person : otherOwners) {
+                if (!(person.getCurrentSignal().equals(person.getNameAsString()))) 
+                    randos.add(person.getNameAsEnum());
+                else
+                    nonRandos.add(person);
+            }
+            for (OwnerName person : randos) {
+                simPrinter.println(person + " is a random player");
+            }
+            ParkLocation myLoc = getStartingLocation(myOwner, nonRandos);
+            this.path = shortestPath(myLoc);
+            simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
+            
             // joseph: 
             this.passTo = getOwnerToPassTo(myOwner, otherOwners);
             simPrinter.print(myOwner.getNameAsString() + ": ");
             simPrinter.print("Loc: " + myLoc.toString() + ", ");
             simPrinter.println("PassTo: " + passTo.getNameAsString());
-            return directive;
-        }
-        else if (round == 6) { // fills ups randos to spot the random player 
-            for (Owner person : otherOwners) {
-                if (!(person.getCurrentSignal().equals(person.getNameAsString()))) 
-                    randos.add(person.getNameAsEnum());
-            }
-            for (OwnerName person : randos) {
-                simPrinter.println(person + " is a random player");
-            }
         }
         int roundWithAction = (round-1)/5 - 1;
         if (roundWithAction < this.path.size()) {
@@ -136,26 +139,26 @@ public class Player extends dogs.sim.Player {
             shape.add(new ParkLocation(0.0, 0.0));
         else if (n == 2) {
             double radian = Math.toRadians(45.0);
-            shape.add(new ParkLocation(Math.cos(radian)*dist, 0.0));
-            shape.add(new ParkLocation(0.0, Math.cos(radian)*dist));
+            shape.add(new ParkLocation(10.0+Math.cos(radian)*dist, 10.0));
+            shape.add(new ParkLocation(10.0, 10.0+Math.cos(radian)*dist));
         }
         else if (n == 3) {
             double radian1 = Math.toRadians(-15.0);
             double radian2 = Math.toRadians(-75.0);
-            shape.add(new ParkLocation(0.0, 0.0));
-            shape.add(new ParkLocation(Math.cos(radian1)*dist, -Math.sin(radian1)*dist));
-            shape.add(new ParkLocation(Math.cos(radian2)*dist, -Math.sin(radian2)*dist));
+            shape.add(new ParkLocation(10.0, 10.0));
+            shape.add(new ParkLocation(10.0+Math.cos(radian1)*dist, 10.0-Math.sin(radian1)*dist));
+            shape.add(new ParkLocation(10.0+Math.cos(radian2)*dist, 10.0-Math.sin(radian2)*dist));
         }
         else if (n == 4) {
-            shape.add(new ParkLocation(0.0,0.0));
-            shape.add(new ParkLocation(dist,0.0));
-            shape.add(new ParkLocation(dist,dist));
-            shape.add(new ParkLocation(0.0,dist));
+            shape.add(new ParkLocation(10.0,10.0));
+            shape.add(new ParkLocation(10.0+dist,10.0));
+            shape.add(new ParkLocation(10.0+dist,10.0+dist));
+            shape.add(new ParkLocation(10.0,10.0+dist));
         }
         else {
             double radianStep = Math.toRadians(360.0/n);
-            double center = (dist/2)/(Math.sin(radianStep/2));
-            double radius = center;
+            double radius = (dist/2)/(Math.sin(radianStep/2));
+            double center = 10.0+radius;
             double radian = Math.toRadians(135.0);
             for (int i = 0; i < n; i++) {
                 double x = Math.cos(radian) * radius + center;
