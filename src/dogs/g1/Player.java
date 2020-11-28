@@ -14,10 +14,11 @@ import dogs.sim.Directive.Instruction;
 
 public class Player extends dogs.sim.Player {
     private List<ParkLocation> path;
-    private Set<OwnerName> randos; 
+    private Set<Owner> randos; 
     private final Double MAX_THROW_DIST = 40.0;
     private Owner passTo;
     private ParkLocation passToLoc;
+    private HashMap<Owner, ParkLocation> ownerLocations;
 	
     /**
      * Player constructor
@@ -32,10 +33,11 @@ public class Player extends dogs.sim.Player {
      public Player(Integer rounds, Integer numDogsPerOwner, Integer numOwners, Integer seed, Random random, SimPrinter simPrinter) {
         super(rounds, numDogsPerOwner, numOwners, seed, random, simPrinter);
         this.path = new ArrayList<>();
-        this.randos = new HashSet<OwnerName>();
+        this.randos = new HashSet<Owner>();
         this.passTo = null;
         // TEMP: temp workaround for owner.getLocation() bug
         this.passToLoc = null;
+        ownerLocations = new HashMap<Owner, ParkLocation>();
      }
 
     /**
@@ -68,10 +70,10 @@ public class Player extends dogs.sim.Player {
         else if (round == 6) { // fills ups randos to spot the random player 
             for (Owner person : otherOwners) {
                 if (!(person.getCurrentSignal().equals(person.getNameAsString()))) 
-                    randos.add(person.getNameAsEnum());
+                    randos.add(person);
             }
-            for (OwnerName person : randos) {
-                simPrinter.println(person + " is a random player");
+            for (Owner person : randos) {
+                simPrinter.println(person.getNameAsString() + " is a random player");
             }
         }
         int roundWithAction = (round-1)/5 - 1;
@@ -104,6 +106,8 @@ public class Player extends dogs.sim.Player {
         ownerNames.add(myName);
         for (Owner owner : otherOwners)
             ownerNames.add(owner.getNameAsString());
+        for (Owner owner : randos)
+            ownerNames.remove(owner.getNameAsString());
 
         int numOwners = ownerNames.size();
         double dist = 40.0;     // use 40 for now
@@ -202,8 +206,7 @@ public class Player extends dogs.sim.Player {
         Double y1 = p1.getRow();
         Double x2 = p2.getColumn();
         Double y2 = p2.getRow();
-
-        return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2));
+        return euclideanDistance(x1-x2, y1-y2)
     }
 
     private Directive throwBall(Owner myOwner, List<Owner> otherOwners) {
@@ -223,6 +226,42 @@ public class Player extends dogs.sim.Player {
         simPrinter.print(passTo.getNameAsString() + " at ");
         simPrinter.println(passToLoc);
         return directive;
+    }
+
+    /* N = 0 → straight line to next owner 
+     * N = 1 → First circle on isosceles triangle 
+     *
+     * throws to the next owner in the geometry OR an owner within 39 m (hopefully not random)
+     *
+     * 
+     */
+    private ParkLocation throwToNext(int N, float nodeDistance) {
+        // throwDistance is max40
+        // TODO: get distance between this person and the next person in the circle
+        // or the next person that isn't random hopefully  
+        float throwDistance = 40; 
+
+        // PlayerLocation A
+        // PlayerLocation B
+        // X, Y = B.x - A.x, B.y - A.y 
+        // Apply Rotation
+        // X += A.x, Y += A.y 
+
+        // for maximum distance between circles, sigma = 2 
+        // minimum is 0 
+        if (N == 3) 
+            float offset = 3 + 3*nodeDistance;
+        else if (N == 2) 
+            float offset = 2 + 2*nodeDistance;
+        else if (N == 1)
+            float offset = 1 + 1*nodeDistance;
+        else
+            float offset = 0; 
+
+        // for maximum throwDistance, = 40 
+        double theta = Math.asin((offset/2)/throwDistance) * 2;
+
+
     }
 
     // TEMP: owner.getLocation kept returning (0,0) so made this as a temp workaround
