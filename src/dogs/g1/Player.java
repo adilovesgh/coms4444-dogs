@@ -73,7 +73,7 @@ public class Player extends dogs.sim.Player {
             directive.instruction = Instruction.MOVE;
             directive.parkLocation = this.path.get(roundWithAction);
             // maybe add a message for other players saying we're still moving into position?
-            simPrinter.println(myOwner.getNameAsString() + " is moving to target location to " + this.path.get(roundWithAction));
+            simPrinter.println(myOwner.getNameAsString() + " is moving to target location to " + this.path.get(roundWithAction) + "\n");
             return directive;
         }
 
@@ -91,7 +91,7 @@ public class Player extends dogs.sim.Player {
             trueLocations.put(o, o.getLocation());
         }
 
-        float nodeSeparation = 0.0f;
+        float nodeSeparation = 2.0f;
         return throwToNext(myOwner, otherOwners, nodeSeparation);
     }
 
@@ -109,7 +109,7 @@ public class Player extends dogs.sim.Player {
         ret.instruction = Instruction.THROW_BALL;
 
         // TODO: Sharon --> Currently prioritizes dogs based on how much time they have left to wait 
-        //              --> pick which Node to throw to (0 = right at next owner, 3 = farthest possible from owner)
+        // TODO: Joseph --> pick which Node to throw to (0 = right at next owner, 3 = farthest possible from owner)
         List<Dog> waitingDogs = getWaitingDogs(A, otherOwners);
         // simPrinter.println();
         // for (Dog d : waitingDogs) 
@@ -121,26 +121,19 @@ public class Player extends dogs.sim.Player {
         else 
             simPrinter.println("There are no waiting dogs for " + A.getNameAsString());
 
-        int N = 0; 
+        int N = 3; 
         float offset = N + N*nodeSeparation; // distance between node and next Owner (top of isosceles)
         
         boolean foundTarget = false; 
         if (nonRandos.size() >= 2) { // we can throw to someone else that's smart!  
             // pick the next person in the cycle, ensuring that they fall within 40 meters
 
-            // for (Owner o : ownerLocations.keySet())
             for (Owner o : nonRandos) {
-                // simPrinter.println("Owner: " + o.getNameAsString() + "\tHashMap Location:  " + ownerLocations.get(o));
-                // simPrinter.println("\t\tOwner.getLocation: " + o.getLocation());
                 simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + o.getLocation());
-                // simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + o.getLocation());
             }
 
             B = ownerCycle.get((findOwnerIndex(ownerCycle,A) + 1) % ownerCycle.size());
-            simPrinter.println("\nCOMING FROM: " + A.getNameAsString() + "\tGOING TO: " + B.getNameAsString());
-            simPrinter.println("Point A: " + A.getLocation() + "\tPoint B: " + B.getLocation() + "\n");
-
-
+            
             if (distanceBetweenTwoPoints(A.getLocation(), B.getLocation()) > 40) {
                 for (Owner o : nonRandos) {
                     if (o == A) continue; 
@@ -167,27 +160,23 @@ public class Player extends dogs.sim.Player {
             return ret;
         }
 
-        ParkLocation Aloc = A.getLocation();
-        ParkLocation Bloc = B.getLocation();
+        Double Ax = A.getLocation().getRow();
+        Double Ay = A.getLocation().getColumn();
+        Double Bx = B.getLocation().getRow();
+        Double By = B.getLocation().getColumn();
+        ParkLocation newB = new ParkLocation(Bx, By);
+
         // distance between thrower and receiver (matching sides of isosceles), maximum = 40m 
-        double throwDistance = distanceBetweenTwoPoints(Aloc, Bloc); 
-        double theta = Math.toDegrees(Math.asin((offset/2)/throwDistance) * 2);
+        double throwDistance = distanceBetweenTwoPoints(A.getLocation(), B.getLocation()); 
+        double theta = -1 * Math.asin((offset/2)/throwDistance) * 2; 
 
-        // Translate point of rotation to origin
-        Bloc.setColumn(Bloc.getColumn() - Aloc.getColumn()); // adjusts X 
-        Bloc.setRow(Bloc.getRow() - Aloc.getRow()); // adjusts Y 
+        // Apply translation, rotation, translation to rotate about non-origin
+        newB.setRow(Ax + (Bx-Ax)*Math.cos(theta) - (By-Ay)*Math.sin(theta));
+        newB.setColumn(Ay + (Bx-Ax)*Math.sin(theta) + (By-Ay)*Math.cos(theta));
 
-        // Apply Rotation
-        Double sin = Math.sin(Math.toRadians(theta));
-        Double cos = Math.cos(Math.toRadians(theta));
-        Bloc.setColumn(Bloc.getColumn()*cos - Bloc.getRow()*sin);
-        Bloc.setRow(Bloc.getColumn()*sin + Bloc.getRow()*cos);
-
-        // Translate point of rotation back 
-        Bloc.setColumn(Bloc.getColumn() + Aloc.getColumn()); // adjusts X 
-        Bloc.setRow(Bloc.getRow() + Aloc.getRow()); // adjusts Y 
-        
-        ret.parkLocation = Bloc;
+        simPrinter.println("\nThrowing from " + A.getNameAsString() + " to " + B.getNameAsString());
+        simPrinter.println("Point A: " + A.getLocation() + "\tPoint B: " + newB + "\n");
+        ret.parkLocation = newB;
         return ret;
     }
 
@@ -238,7 +227,8 @@ public class Player extends dogs.sim.Player {
     private void updateLocations() {
         int numOwners = nonRandos.size();
         double dist = 40.0;     // use 40 for now
-        List<ParkLocation> optimalStartingLocations = getOptimalLocationShape(numOwners, dist);
+        double fromEdges = 10.0; // how far from the edges of the park 
+        List<ParkLocation> optimalStartingLocations = getOptimalLocationShape(numOwners, dist, fromEdges);
    
         Collections.sort(nonRandos, new Comparator<Owner>() {
             @Override public int compare(Owner o1, Owner o2) {
@@ -273,35 +263,36 @@ public class Player extends dogs.sim.Player {
      *
      * @param n            number of players
      * @param dist         distance between each player
+     * @param fromEdges    distance between player and gate 
      * @return             list of park locations where each player should go
      *
      */
-    private List<ParkLocation> getOptimalLocationShape(Integer n, Double dist) {
+    private List<ParkLocation> getOptimalLocationShape(Integer n, Double dist, Double fromEdges) {
         List<ParkLocation> shape = new ArrayList<ParkLocation>();
         if (n == 1)
-            shape.add(new ParkLocation(10.0, 10.0));
+            shape.add(new ParkLocation(fromEdges, fromEdges));
         else if (n == 2) {
             double radian = Math.toRadians(45.0);
-            shape.add(new ParkLocation(10.0+Math.cos(radian)*dist, 10.0));
-            shape.add(new ParkLocation(10.0, 10.0+Math.cos(radian)*dist));
+            shape.add(new ParkLocation(fromEdges+Math.cos(radian)*dist, fromEdges));
+            shape.add(new ParkLocation(fromEdges, fromEdges+Math.cos(radian)*dist));
         }
         else if (n == 3) {
             double radian1 = Math.toRadians(-15.0);
             double radian2 = Math.toRadians(-75.0);
-            shape.add(new ParkLocation(10.0, 10.0));
-            shape.add(new ParkLocation(10.0+Math.cos(radian1)*dist, 10.0-Math.sin(radian1)*dist));
-            shape.add(new ParkLocation(10.0+Math.cos(radian2)*dist, 10.0-Math.sin(radian2)*dist));
+            shape.add(new ParkLocation(fromEdges, fromEdges));
+            shape.add(new ParkLocation(fromEdges+Math.cos(radian1)*dist, fromEdges-Math.sin(radian1)*dist));
+            shape.add(new ParkLocation(fromEdges+Math.cos(radian2)*dist, fromEdges-Math.sin(radian2)*dist));
         }
         else if (n == 4) {
-            shape.add(new ParkLocation(10.0,10.0));
-            shape.add(new ParkLocation(10.0+dist,10.0));
-            shape.add(new ParkLocation(10.0+dist,10.0+dist));
-            shape.add(new ParkLocation(10.0,10.0+dist));
+            shape.add(new ParkLocation(fromEdges,fromEdges));
+            shape.add(new ParkLocation(fromEdges+dist,fromEdges));
+            shape.add(new ParkLocation(fromEdges+dist,fromEdges+dist));
+            shape.add(new ParkLocation(fromEdges,fromEdges+dist));
         }
         else {
             double radianStep = Math.toRadians(360.0/n);
             double radius = (dist/2)/(Math.sin(radianStep/2));
-            double center = 10.0+radius;
+            double center = fromEdges+radius;
             double radian = Math.toRadians(135.0);
             for (int i = 0; i < n; i++) {
                 double x = Math.cos(radian) * radius + center;
@@ -384,42 +375,43 @@ public class Player extends dogs.sim.Player {
         Random random = new Random();
         SimPrinter simPrinter = new SimPrinter(true);
         Player player = new Player(1, 1, 1, 1, random, simPrinter);
+        double fromEdges = 10.0;
 
         // TEST 1 - optimal line
         double dist = 2*Math.sqrt(2);
         int n = 2;
-        List<ParkLocation> optimalShape = player.getOptimalLocationShape(n, dist);
+        List<ParkLocation> optimalShape = player.getOptimalLocationShape(n, dist, fromEdges);
         simPrinter.println(optimalShape);
 
         // TEST 2 - optimal equilateral triangle
         double radian = Math.toRadians(-15);
         dist = Math.cos(radian)*5;
         n = 3;
-        optimalShape = player.getOptimalLocationShape(n, dist);
+        optimalShape = player.getOptimalLocationShape(n, dist, fromEdges);
         simPrinter.println(optimalShape);
 
         // TEST 3 - optimal square
         dist = 2;
         n = 4;
-        optimalShape = player.getOptimalLocationShape(n, dist);
+        optimalShape = player.getOptimalLocationShape(n, dist, fromEdges);
         simPrinter.println(optimalShape);
 
         // TEST 4 - optimal regular pentagon
         dist = 3;
         n = 5;
-        optimalShape = player.getOptimalLocationShape(n, dist);
+        optimalShape = player.getOptimalLocationShape(n, dist, fromEdges);
         simPrinter.println(optimalShape);
 
         // TEST 5 - optimal regular hexagon
         dist = 5;
         n = 6;
-        optimalShape = player.getOptimalLocationShape(n, dist);
+        optimalShape = player.getOptimalLocationShape(n, dist, fromEdges);
         simPrinter.println(optimalShape);
 
         // TEST 6 - optimal regular octagon
         dist = Math.sqrt(10);
         n = 8;
-        optimalShape = player.getOptimalLocationShape(n, dist);
+        optimalShape = player.getOptimalLocationShape(n, dist, fromEdges);
         simPrinter.println(optimalShape);
     }
 }
