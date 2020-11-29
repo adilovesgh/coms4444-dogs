@@ -54,7 +54,6 @@ public class Player extends dogs.sim.Player {
      *
      */
     public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
-        simPrinter.println(myOwner.getNameAsString() + ": " + myOwner.getLocation().toString());
         Directive directive = new Directive();
         if (round == 1) { // gets starting location, calls out name to find random players
             directive.instruction = Instruction.CALL_SIGNAL;
@@ -74,12 +73,13 @@ public class Player extends dogs.sim.Player {
             directive.instruction = Instruction.MOVE;
             directive.parkLocation = this.path.get(roundWithAction);
             // maybe add a message for other players saying we're still moving into position?
-            simPrinter.println(myOwner.getNameAsString() + " is moving to target location");
+            simPrinter.println(myOwner.getNameAsString() + " is moving to target location to " + this.path.get(roundWithAction));
             return directive;
         }
 
         simPrinter.println(myOwner.getNameAsString() + " is at target location");
         // stay away from the random
+        updateRandos(myOwner, otherOwners);
 
         // keeps track of random player's locations 
         for (Owner o : randos) {
@@ -118,27 +118,34 @@ public class Player extends dogs.sim.Player {
 
         if (waitingDogs.size() >= 1)
             ret.dogToPlayWith = waitingDogs.get(0); 
+        else 
+            simPrinter.println("There are no waiting dogs for " + A.getNameAsString());
+
         int N = 0; 
-        float offset = N + N*nodeSeparation; // how far the node we are throwing to is from the next Owner (top of isosceles)
+        float offset = N + N*nodeSeparation; // distance between node and next Owner (top of isosceles)
         
         boolean foundTarget = false; 
         if (nonRandos.size() >= 2) { // we can throw to someone else that's smart!  
             // pick the next person in the cycle, ensuring that they fall within 40 meters
 
-            for (Owner o : ownerLocations.keySet())
-                simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + ownerLocations.get(o));
+            // for (Owner o : ownerLocations.keySet())
+            for (Owner o : nonRandos) {
+                // simPrinter.println("Owner: " + o.getNameAsString() + "\tHashMap Location:  " + ownerLocations.get(o));
+                // simPrinter.println("\t\tOwner.getLocation: " + o.getLocation());
+                simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + o.getLocation());
                 // simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + o.getLocation());
+            }
 
             B = ownerCycle.get((findOwnerIndex(ownerCycle,A) + 1) % ownerCycle.size());
             simPrinter.println("\nCOMING FROM: " + A.getNameAsString() + "\tGOING TO: " + B.getNameAsString());
-            simPrinter.println("Point A: " + A.getLocation() + "\tPoint B: " + ownerLocations.get(B) + "\n");
+            simPrinter.println("Point A: " + A.getLocation() + "\tPoint B: " + B.getLocation() + "\n");
 
 
-            if (distanceBetweenTwoPoints(A.getLocation(), ownerLocations.get(B)) > 40) {
+            if (distanceBetweenTwoPoints(A.getLocation(), B.getLocation()) > 40) {
                 for (Owner o : nonRandos) {
                     if (o == A) continue; 
                     B = o; 
-                    if (distanceBetweenTwoPoints(A.getLocation(), ownerLocations.get(B)) <= 40) {
+                    if (distanceBetweenTwoPoints(A.getLocation(), B.getLocation()) <= 40) {
                         foundTarget = true;
                         break;
                     }
@@ -151,7 +158,7 @@ public class Player extends dogs.sim.Player {
             // pick the next available person within 40 meters 
             for (Owner o : randos) {
                 B = o; 
-                if (distanceBetweenTwoPoints(A.getLocation(), ownerLocations.get(B)) <= 40) break;
+                if (distanceBetweenTwoPoints(A.getLocation(), B.getLocation()) <= 40) break;
             }
         }
         else { // case where nobody else is within the range
@@ -161,7 +168,7 @@ public class Player extends dogs.sim.Player {
         }
 
         ParkLocation Aloc = A.getLocation();
-        ParkLocation Bloc = ownerLocations.get(B);
+        ParkLocation Bloc = B.getLocation();
         // distance between thrower and receiver (matching sides of isosceles), maximum = 40m 
         double throwDistance = distanceBetweenTwoPoints(Aloc, Bloc); 
         double theta = Math.toDegrees(Math.asin((offset/2)/throwDistance) * 2);
@@ -192,6 +199,39 @@ public class Player extends dogs.sim.Player {
         return -1; 
     }
 
+    private Owner findOwner(List<Owner> haystack, Owner needle) {
+        for (int i = 0; i < haystack.size(); i++) {
+            if (haystack.get(i).getNameAsString().equals(needle.getNameAsString()))
+                return haystack.get(i);
+        }
+        return null; 
+    }
+
+    private void updateRandos(Owner me, List<Owner> otherOwners) {
+        Set<Owner> newRandos = new HashSet<Owner>();
+        List<Owner> newOwnerCycle = new ArrayList<>(); 
+        List<Owner> newNonRandos = new ArrayList<>();
+        newNonRandos.add(me);
+        for (Owner o : nonRandos) {
+            if (o.getNameAsString().equals(me.getNameAsString())) continue;
+            newNonRandos.add(findOwner(otherOwners, o));
+        }
+        for (Owner o : randos) {
+            newRandos.add(findOwner(otherOwners, o));
+        }
+        for (Owner o : ownerCycle) {
+            if (o.getNameAsString().equals(me.getNameAsString())) 
+                newOwnerCycle.add(me);
+            else
+                newOwnerCycle.add(findOwner(otherOwners, o));
+        }
+
+        this.randos = newRandos;
+        this.nonRandos = newNonRandos; 
+        this.ownerCycle = newOwnerCycle;
+    }
+
+
     /**
      * Get the location where the current player will move to in the circle
      */
@@ -209,6 +249,7 @@ public class Player extends dogs.sim.Player {
         // add cycle to array and to tracker for locations 
         for (int i = 0; i < numOwners; i++) {
             ownerLocations.put(nonRandos.get(i), optimalStartingLocations.get(i));
+            // ownerLocations.put(nonRandos.get(i), new ParkLocation(optimalStartingLocations.get(i).getRow(),optimalStartingLocations.get(i).getColumn()));
             ownerCycle.add(nonRandos.get(i));
         }
 
