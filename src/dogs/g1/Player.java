@@ -127,6 +127,7 @@ public class Player extends dogs.sim.Player {
 
             for (Owner o : ownerLocations.keySet())
                 simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + ownerLocations.get(o));
+                // simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + o.getLocation());
 
             B = ownerCycle.get((findOwnerIndex(ownerCycle,A) + 1) % ownerCycle.size());
             simPrinter.println("\nCOMING FROM: " + A.getNameAsString() + "\tGOING TO: " + B.getNameAsString());
@@ -320,7 +321,7 @@ public class Player extends dogs.sim.Player {
     private List<Dog> getWaitingDogs(Owner myOwner, List<Owner> otherOwners) {
         List<Dog> waitingDogs = new ArrayList<>();
     	for(Dog dog : myOwner.getDogs()) {
-    		if(dog.isWaitingForItsOwner())
+    		if(dog.isWaitingForOwner(myOwner))
     			waitingDogs.add(dog);
     	}
     	for(Owner otherOwner : otherOwners) {
