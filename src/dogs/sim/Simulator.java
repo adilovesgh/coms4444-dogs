@@ -325,7 +325,7 @@ public class Simulator {
 							clonedOtherOwner.setAllExerciseCompletionTime(Double.MAX_VALUE);
 							clonedOtherOwner.setAllExerciseCompleted(false);
 						}
-						
+												
 						Directive directive = playerWrapper.chooseDirective(round, clonedOwner, clonedOtherOwners);
 						Instruction instruction = directive.instruction;
 						if(instruction != null) {

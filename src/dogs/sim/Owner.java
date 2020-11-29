@@ -108,7 +108,12 @@ public class Owner implements Serializable {
 	}
 	
 	public boolean hasDog(Dog dog) {
-		return dogs.contains(dog);
+		if(dogs.contains(dog))
+			return true;
+		for(Dog existingDog : dogs)
+			if(dog.getRealID().equals(existingDog.getRealID()) && dog.getRandomID().equals(existingDog.getRandomID()))
+				return true;
+		return false;
 	}
 		
 	public void setLocation(ParkLocation parkLocation) {
