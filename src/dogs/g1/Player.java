@@ -21,6 +21,7 @@ public class Player extends dogs.sim.Player {
     private List<Owner> nonRandos;
     private final Double MAX_THROW_DIST = 40.0;
     private HashMap<Owner, ParkLocation> ownerLocations;
+    private HashMap<Owner, ParkLocation> trueLocations;
     private List<Owner> ownerCycle;
 	
     /**
@@ -39,6 +40,7 @@ public class Player extends dogs.sim.Player {
         this.randos = new HashSet<Owner>();
         this.nonRandos = new ArrayList<>();
         this.ownerLocations = new HashMap<Owner, ParkLocation>();
+        this.trueLocations = new HashMap<Owner, ParkLocation>();
         this.ownerCycle = new ArrayList<Owner>();
      }
 
@@ -78,10 +80,15 @@ public class Player extends dogs.sim.Player {
 
         simPrinter.println(myOwner.getNameAsString() + " is at target location");
         // stay away from the random
-        // TODO: track the non random player's locations? 
+
+        // keeps track of random player's locations 
         for (Owner o : randos) {
             ownerLocations.put(o, o.getLocation());
+            trueLocations.put(o, o.getLocation());
             simPrinter.println("RANDOM: " + o.getNameAsString() + "'s position: " + o.getLocationAsString());
+        }
+        for (Owner o : nonRandos) {
+            trueLocations.put(o, o.getLocation());
         }
 
         float nodeSeparation = 0.0f;
@@ -104,23 +111,33 @@ public class Player extends dogs.sim.Player {
         // TODO: Sharon --> Currently prioritizes dogs based on how much time they have left to wait 
         //              --> pick which Node to throw to (0 = right at next owner, 3 = farthest possible from owner)
         List<Dog> waitingDogs = getWaitingDogs(A, otherOwners);
-        for (Dog d : waitingDogs) 
-            simPrinter.println("Dog " + d.getRandomID() + " has " + d.getWaitingTimeRemaining() + " wait time remaining");
+        // simPrinter.println();
+        // for (Dog d : waitingDogs) 
+        //     simPrinter.println("Dog " + d.getBreed() + " has " + d.getWaitingTimeRemaining() + " wait time remaining");
+        // simPrinter.println();
 
         if (waitingDogs.size() >= 1)
             ret.dogToPlayWith = waitingDogs.get(0); 
-        int N = 3; 
+        int N = 0; 
         float offset = N + N*nodeSeparation; // how far the node we are throwing to is from the next Owner (top of isosceles)
         
         boolean foundTarget = false; 
         if (nonRandos.size() >= 2) { // we can throw to someone else that's smart!  
             // pick the next person in the cycle, ensuring that they fall within 40 meters
-            B = ownerCycle.get((ownerCycle.indexOf(A) + 1) % ownerCycle.size());
-            if (distanceBetweenTwoPoints(ownerLocations.get(A), ownerLocations.get(B)) > 40) {
+
+            for (Owner o : ownerLocations.keySet())
+                simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + ownerLocations.get(o));
+
+            B = ownerCycle.get((findOwnerIndex(ownerCycle,A) + 1) % ownerCycle.size());
+            simPrinter.println("\nCOMING FROM: " + A.getNameAsString() + "\tGOING TO: " + B.getNameAsString());
+            simPrinter.println("Point A: " + A.getLocation() + "\tPoint B: " + ownerLocations.get(B) + "\n");
+
+
+            if (distanceBetweenTwoPoints(A.getLocation(), ownerLocations.get(B)) > 40) {
                 for (Owner o : nonRandos) {
                     if (o == A) continue; 
                     B = o; 
-                    if (distanceBetweenTwoPoints(ownerLocations.get(A), ownerLocations.get(B)) <= 40) {
+                    if (distanceBetweenTwoPoints(A.getLocation(), ownerLocations.get(B)) <= 40) {
                         foundTarget = true;
                         break;
                     }
@@ -133,7 +150,7 @@ public class Player extends dogs.sim.Player {
             // pick the next available person within 40 meters 
             for (Owner o : randos) {
                 B = o; 
-                if (distanceBetweenTwoPoints(ownerLocations.get(A), ownerLocations.get(B)) <= 40) break;
+                if (distanceBetweenTwoPoints(A.getLocation(), ownerLocations.get(B)) <= 40) break;
             }
         }
         else { // case where nobody else is within the range
@@ -142,19 +159,19 @@ public class Player extends dogs.sim.Player {
             return ret;
         }
 
-        ParkLocation Aloc = ownerLocations.get(A);
+        ParkLocation Aloc = A.getLocation();
         ParkLocation Bloc = ownerLocations.get(B);
         // distance between thrower and receiver (matching sides of isosceles), maximum = 40m 
         double throwDistance = distanceBetweenTwoPoints(Aloc, Bloc); 
-        double theta = Math.asin((offset/2)/throwDistance) * 2;
+        double theta = Math.toDegrees(Math.asin((offset/2)/throwDistance) * 2);
 
         // Translate point of rotation to origin
         Bloc.setColumn(Bloc.getColumn() - Aloc.getColumn()); // adjusts X 
         Bloc.setRow(Bloc.getRow() - Aloc.getRow()); // adjusts Y 
 
         // Apply Rotation
-        Double sin = Math.sin(theta);
-        Double cos = Math.cos(theta);
+        Double sin = Math.sin(Math.toRadians(theta));
+        Double cos = Math.cos(Math.toRadians(theta));
         Bloc.setColumn(Bloc.getColumn()*cos - Bloc.getRow()*sin);
         Bloc.setRow(Bloc.getColumn()*sin + Bloc.getRow()*cos);
 
@@ -166,6 +183,14 @@ public class Player extends dogs.sim.Player {
         return ret;
     }
 
+    private int findOwnerIndex(List<Owner> haystack, Owner needle) {
+        for (int i = 0; i < haystack.size(); i++) {
+            if (haystack.get(i).getNameAsString().equals(needle.getNameAsString()))
+                return i;
+        }
+        return -1; 
+    }
+
     /**
      * Get the location where the current player will move to in the circle
      */
@@ -174,11 +199,19 @@ public class Player extends dogs.sim.Player {
         double dist = 40.0;     // use 40 for now
         List<ParkLocation> optimalStartingLocations = getOptimalLocationShape(numOwners, dist);
    
+        Collections.sort(nonRandos, new Comparator<Owner>() {
+            @Override public int compare(Owner o1, Owner o2) {
+                return o1.getNameAsString().compareTo(o2.getNameAsString());
+            }
+        });
+
         // add cycle to array and to tracker for locations 
-        for (int i = 0; i < nonRandos.size(); i++) {
+        for (int i = 0; i < numOwners; i++) {
             ownerLocations.put(nonRandos.get(i), optimalStartingLocations.get(i));
             ownerCycle.add(nonRandos.get(i));
         }
+
+        Collections.reverse(ownerCycle);
     }
 
     private void findRandos(Owner myOwner, List<Owner> otherOwners) {
