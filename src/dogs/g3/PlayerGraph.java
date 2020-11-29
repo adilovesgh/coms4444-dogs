@@ -15,8 +15,7 @@ public class PlayerGraph {
     public PlayerGraph(List<Owner> allOwners){
         owners = new HashMap<>();
         for(Owner owner: allOwners){
-            PlayerNode player = new PlayerNode(owner, getNeighbors(owner, allOwners));
-            owners.put(owner.getNameAsEnum(), player);
+            addNode(owner);
         }
         // System.out.println(this.owners.toString());
     }
@@ -25,14 +24,36 @@ public class PlayerGraph {
         return new ArrayList<>();
     }
 
+    private void addNode(Owner owner) {
+        PlayerNode node = new PlayerNode(owner);
+        this.owners.put(owner.getNameAsEnum(), node);
+    } 
+
+    public void addConnection(Owner owner1, Owner owner2) {
+        addConnection(owner1, owner2, false);
+    }
+
+    public void addConnection(Owner owner1, Owner owner2, boolean bidirectional) {
+        PlayerNode first = this.owners.get(owner1.getNameAsEnum());
+        first.addNeighbor(owner2);
+        if (bidirectional) {
+            PlayerNode second = this.owners.get(owner2.getNameAsEnum());
+            second.addNeighbor(owner1);
+        }
+    }
+
 }
 
 class PlayerNode{
-    Owner owner;
-    List<Owner> connectedOwners;
+    OwnerName name;
+    List<OwnerName> connectedOwners;
 
-    public PlayerNode(Owner owner,List<Owner> connectedOwners){
-        this.owner = owner;
-        this.connectedOwners = connectedOwners;
+    public PlayerNode(Owner owner) {
+        this.name = owner.getNameAsEnum();
+        this.connectedOwners = new LinkedList<OwnerName>();
     }
+
+    public void addNeighbor(Owner owner) {
+        this.connectedOwners.add(owner.getNameAsEnum());
+    }   
 }
