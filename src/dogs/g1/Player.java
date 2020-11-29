@@ -167,7 +167,9 @@ public class Player extends dogs.sim.Player {
         ParkLocation newB = new ParkLocation(Bx, By);
 
         // distance between thrower and receiver (matching sides of isosceles), maximum = 40m 
-        double throwDistance = distanceBetweenTwoPoints(A.getLocation(), B.getLocation()); 
+        double throwDistance = distanceBetweenTwoPoints(A.getLocation(), B.getLocation());
+        
+        // OPTION: change side of owner the throw is headed
         double theta = -1 * Math.asin((offset/2)/throwDistance) * 2; 
 
         // Apply translation, rotation, translation to rotate about non-origin
@@ -228,6 +230,7 @@ public class Player extends dogs.sim.Player {
         int numOwners = nonRandos.size();
         double dist = 40.0;     // use 40 for now
         double fromEdges = 10.0; // how far from the edges of the park 
+        // OPTION: change dist and fromEdges to change the shape
         List<ParkLocation> optimalStartingLocations = getOptimalLocationShape(numOwners, dist, fromEdges);
    
         Collections.sort(nonRandos, new Comparator<Owner>() {
@@ -242,7 +245,7 @@ public class Player extends dogs.sim.Player {
             // ownerLocations.put(nonRandos.get(i), new ParkLocation(optimalStartingLocations.get(i).getRow(),optimalStartingLocations.get(i).getColumn()));
             ownerCycle.add(nonRandos.get(i));
         }
-
+        // OPTION: change the cycle direction
         Collections.reverse(ownerCycle);
     }
 
