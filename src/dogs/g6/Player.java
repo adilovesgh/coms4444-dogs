@@ -3,7 +3,6 @@ package dogs.g6; // TODO modify the package name to reflect your team
 import java.util.*;
 import dogs.sim.*;
 
-
 public class Player extends dogs.sim.Player {
 
     final boolean PRINT_STATEMENTS = true;
@@ -57,17 +56,15 @@ public class Player extends dogs.sim.Player {
         // Get a lit of currently waiting dogs
         ArrayList<Dog> dogs = this.getDogs(myOwner, otherOwners);
 
+        Comparator<Dog> byTime = (Dog d1, Dog d2) -> Double.compare(d1.getWaitingTimeRemaining(), d2.getWaitingTimeRemaining());
+        Collections.sort(dogs, byTime);
+
         // TODO: Sort dogs in decreasing speed order
 
         if (dogs.size() > 0) {
             directive.instruction = Directive.Instruction.THROW_BALL;
             directive.dogToPlayWith = dogs.get(0);
-            if (this.myInstance % 2 == 0) {
-                directive.parkLocation = new ParkLocation(this.initiaLocation.getRow() + 40, this.initiaLocation.getColumn());
-            }
-            else {
-                directive.parkLocation = new ParkLocation(this.initiaLocation.getRow() - 40, this.initiaLocation.getColumn());
-            }
+            directive.parkLocation = getLinearThrowLocation();
         }
 
         return directive;
@@ -77,7 +74,7 @@ public class Player extends dogs.sim.Player {
         Double initialX = 25.0;
         Double initialY = 25.0;
 
-        Double deltaX = 40.0;
+        Double deltaX = 39.95;
         Double deltaY = 1.1;
 
         if (this.myInstance % 2 == 0) {
@@ -86,6 +83,47 @@ public class Player extends dogs.sim.Player {
         else {
             return new ParkLocation(initialX + deltaX, initialY + deltaY*((int)(myInstance-1)/2));
         }
+    }
+
+    // Throw to the owner across yourself
+    private ParkLocation getLinearThrowLocation() {
+        Double deltaX = 39.95;
+        Double deltaY = 1.1;
+        int[] offsets = {-1, 0, 1};
+
+        ParkLocation parkLocation;
+        int offset = getRandom(offsets);
+
+        if (this.myInstance % 2 == 0) {
+            parkLocation = new ParkLocation(this.initiaLocation.getRow() + deltaX, this.initiaLocation.getColumn() + deltaY*offset);
+        }
+        else {
+            parkLocation = new ParkLocation(this.initiaLocation.getRow() - deltaX, this.initiaLocation.getColumn() + deltaY*offset);
+        }
+        return parkLocation;
+    }
+
+    // Randomly throw to one of the closest 3 owners across
+    private ParkLocation getOffsetThrowLocation() {
+        Double deltaX = 39.95;
+        Double deltaY = 1.1;
+        int[] offsets = {-1, 0, 1};
+
+        ParkLocation parkLocation;
+        int offset = getRandom(offsets);
+
+        if (this.myInstance % 2 == 0) {
+            parkLocation = new ParkLocation(this.initiaLocation.getRow() + deltaX, this.initiaLocation.getColumn() + deltaY*offset);
+        }
+        else {
+            parkLocation = new ParkLocation(this.initiaLocation.getRow() - deltaX, this.initiaLocation.getColumn() + deltaY*offset);
+        }
+        return parkLocation;
+    }
+
+    private int getRandom(int[] array) {
+        int rand = new Random().nextInt(array.length);
+        return array[rand];
     }
 
     private Directive moveTowardsInitialLocation(Owner owner) {
