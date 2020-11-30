@@ -5,6 +5,8 @@ import dogs.g3.PlayerGraph.GraphType;
 
 import java.util.*;
 
+import javax.swing.plaf.synth.SynthSeparatorUI;
+
 import dogs.sim.Directive;
 import dogs.sim.Directive.Instruction;
 import dogs.sim.Dictionary;
@@ -138,9 +140,10 @@ public class Player extends dogs.sim.Player {
 			List<Owner> allOwners = otherOwners;
 			allOwners.add(myOwner);
 			sortOwners();
-
 			Directive directive = new Directive();
-
+			// if(round == 6){
+			// 	System.out.println(getOtherOwnersSignals(otherOwners).toString());
+			// }
 			if (round == 1) {
 				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(allOwners);
 				int radius = 40 * (this.otherOwners.size());
@@ -155,6 +158,9 @@ public class Player extends dogs.sim.Player {
 				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners,
 						new ParkLocation(25.0, 25.0), radius);
 				this.positions = currentPositions;
+				directive.instruction = Instruction.CALL_SIGNAL;
+				directive.signalWord = "g3";
+				return directive;
 			}
 
 			// System.out.println(this.graph.graphType);

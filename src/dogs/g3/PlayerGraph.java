@@ -38,7 +38,7 @@ public class PlayerGraph {
         }
         dogConcentration /= (double) allOwners.size();
         graphType = dogConcentration>15.0 && allOwners.size()>9 ? GraphType.SPOKE : GraphType.POLYGON;
-        System.out.println(graphType);
+        //System.out.println(graphType);
         return graphType;
     }
 
