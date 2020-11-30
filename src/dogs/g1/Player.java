@@ -13,6 +13,7 @@ import dogs.sim.Owner.OwnerName;
 import dogs.sim.SimPrinter;
 import dogs.sim.ParkLocation;
 import dogs.sim.Directive.Instruction;
+import dogs.sim.DogReference.Breed;
 
 
 public class Player extends dogs.sim.Player {
@@ -21,8 +22,8 @@ public class Player extends dogs.sim.Player {
     private List<Owner> nonRandos;
     private final Double MAX_THROW_DIST = 40.0;
     private HashMap<Owner, ParkLocation> ownerLocations;
-    private HashMap<Owner, ParkLocation> trueLocations;
     private List<Owner> ownerCycle;
+    private int steppingStone;
 	
     /**
      * Player constructor
@@ -40,8 +41,8 @@ public class Player extends dogs.sim.Player {
         this.randos = new HashSet<Owner>();
         this.nonRandos = new ArrayList<>();
         this.ownerLocations = new HashMap<Owner, ParkLocation>();
-        this.trueLocations = new HashMap<Owner, ParkLocation>();
         this.ownerCycle = new ArrayList<Owner>();
+        this.steppingStone = 0;
      }
 
     /**
@@ -67,13 +68,34 @@ public class Player extends dogs.sim.Player {
             this.path = shortestPath(ownerLocations.get(myOwner));
             simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
         }
-        int roundWithAction = (round-1)/5 - 1;
-        // TODO: if current location is not as expected? for flexibility in getting to new shape 
-        if (roundWithAction < this.path.size()) {
+
+        // checkForReshape(myOwner, otherOwners);
+
+        // private void checkForReshape(Owner me, List<Owner> others) {
+
+        //     // find closest entry point in cycle to place Owner
+        //     // adjust path, 
+        //     nonRandos.add(myOwner);
+        //     for (Owner person : otherOwners) {
+        //         if (!(person.getCurrentSignal().equals(person.getNameAsString()))) 
+        //             randos.add(person);
+        //         else
+        //             nonRandos.add(person);
+        //     }
+        //     for (Owner person : randos)
+        //         simPrinter.println(person.getNameAsString() + " is a random player");
+
+        //     findRandos(myOwner, otherOwners);
+        //     updateLocations();
+        //     this.path = shortestPath(ownerLocations.get(myOwner));
+        //     simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
+        // }
+
+        // TODO: if not at intended location
+        if (steppingStone != path.size()) {
             directive.instruction = Instruction.MOVE;
-            directive.parkLocation = this.path.get(roundWithAction);
+            directive.parkLocation = this.path.get(steppingStone++);
             // maybe add a message for other players saying we're still moving into position?
-            simPrinter.println(myOwner.getNameAsString() + " is moving to target location to " + this.path.get(roundWithAction) + "\n");
             return directive;
         }
 
@@ -84,13 +106,11 @@ public class Player extends dogs.sim.Player {
         // keeps track of random player's locations 
         for (Owner o : randos) {
             ownerLocations.put(o, o.getLocation());
-            trueLocations.put(o, o.getLocation());
             simPrinter.println("RANDOM: " + o.getNameAsString() + "'s position: " + o.getLocationAsString());
         }
-        for (Owner o : nonRandos) {
-            trueLocations.put(o, o.getLocation());
-        }
 
+        // OPTION: change how far each node is from the other one in the isosceles triangle
+        // float nodeSeparation = 0.0f;
         float nodeSeparation = 2.0f;
         return throwToNext(myOwner, otherOwners, nodeSeparation);
     }
@@ -109,19 +129,27 @@ public class Player extends dogs.sim.Player {
         ret.instruction = Instruction.THROW_BALL;
 
         // TODO: Sharon --> Currently prioritizes dogs based on how much time they have left to wait 
+        //                  Maybe dont pick dogs that have already reached their exercise goal 
+        //                  Prioritizze random dogs?
         // TODO: Joseph --> pick which Node to throw to (0 = right at next owner, 3 = farthest possible from owner)
-        List<Dog> waitingDogs = getWaitingDogs(A, otherOwners);
-        // simPrinter.println();
-        // for (Dog d : waitingDogs) 
-        //     simPrinter.println("Dog " + d.getBreed() + " has " + d.getWaitingTimeRemaining() + " wait time remaining");
-        // simPrinter.println();
-
-        if (waitingDogs.size() >= 1)
-            ret.dogToPlayWith = waitingDogs.get(0); 
-        else 
+        List<Dog> waitingDogs = myDogsWaiting(A);
+        
+        if (waitingDogs.size() == 0) { // TODO: call out something to say you have no dogs? 
+            waitingDogs = getWaitingDogs(A, otherOwners);
+        }
+        if (waitingDogs.size() == 0) {
             simPrinter.println("There are no waiting dogs for " + A.getNameAsString());
+            ret.instruction = Instruction.NOTHING;
+            return ret;
+        }
+    
+        ret.dogToPlayWith = waitingDogs.get(0); 
+            
+        int N = 0; // Terrier breed
+        if (waitingDogs.get(0).getBreed() == Breed.SPANIEL) N = 1;
+        else if (waitingDogs.get(0).getBreed() == Breed.POODLE) N = 2;
+        else if (waitingDogs.get(0).getBreed() == Breed.LABRADOR) N = 3; 
 
-        int N = 3; 
         float offset = N + N*nodeSeparation; // distance between node and next Owner (top of isosceles)
         
         boolean foundTarget = false; 
@@ -170,7 +198,8 @@ public class Player extends dogs.sim.Player {
         double throwDistance = distanceBetweenTwoPoints(A.getLocation(), B.getLocation());
         
         // OPTION: change side of owner the throw is headed
-        double theta = -1 * Math.asin((offset/2)/throwDistance) * 2; 
+        // double theta = -1 * Math.asin((offset/2)/throwDistance) * 2; 
+        double theta = Math.asin((offset/2)/throwDistance) * 2; 
 
         // Apply translation, rotation, translation to rotate about non-origin
         newB.setRow(Ax + (Bx-Ax)*Math.cos(theta) - (By-Ay)*Math.sin(theta));
@@ -180,6 +209,10 @@ public class Player extends dogs.sim.Player {
         simPrinter.println("Point A: " + A.getLocation() + "\tPoint B: " + newB + "\n");
         ret.parkLocation = newB;
         return ret;
+    }
+
+    private boolean sameLocation(ParkLocation a, ParkLocation b) {
+        return a.getColumn() == b.getColumn() && a.getRow() == b.getRow();
     }
 
     private int findOwnerIndex(List<Owner> haystack, Owner needle) {
@@ -242,7 +275,6 @@ public class Player extends dogs.sim.Player {
         // add cycle to array and to tracker for locations 
         for (int i = 0; i < numOwners; i++) {
             ownerLocations.put(nonRandos.get(i), optimalStartingLocations.get(i));
-            // ownerLocations.put(nonRandos.get(i), new ParkLocation(optimalStartingLocations.get(i).getRow(),optimalStartingLocations.get(i).getColumn()));
             ownerCycle.add(nonRandos.get(i));
         }
         // OPTION: change the cycle direction
@@ -315,22 +347,22 @@ public class Player extends dogs.sim.Player {
      *
      */
     private List<ParkLocation> shortestPath(ParkLocation start) {
-        List<ParkLocation> path = new ArrayList<>();
+        List<ParkLocation> p = new ArrayList<>();
         double magnitude = euclideanDistance(start.getRow(), start.getColumn());
         if (magnitude == 0)
-            return path;
+            return p;
         
         double xStep = start.getRow()/magnitude;
         double yStep = start.getColumn()/magnitude;
         double xTemp = xStep*5;
         double yTemp = yStep*5;
         while (xTemp <= start.getRow() && yTemp <= start.getColumn()) {
-            path.add(new ParkLocation(xTemp, yTemp));
+            p.add(new ParkLocation(xTemp, yTemp));
             xTemp += xStep*5;
             yTemp += yStep*5;
         }
-        path.add(start);
-        return path;
+        p.add(start);
+        return p;
     }
 
     private double euclideanDistance(double x, double y) {
@@ -370,6 +402,15 @@ public class Player extends dogs.sim.Player {
                 return d1.getWaitingTimeRemaining().compareTo(d2.getWaitingTimeRemaining());
             }
         });
+        return waitingDogs;
+    }
+
+    private List<Dog> myDogsWaiting(Owner myOwner) {
+        List<Dog> waitingDogs = new ArrayList<>();
+    	for(Dog dog : myOwner.getDogs()) {
+    		if(dog.isWaitingForOwner(myOwner))
+    			waitingDogs.add(dog);
+    	}
         return waitingDogs;
     }
 
