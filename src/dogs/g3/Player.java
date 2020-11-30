@@ -98,7 +98,9 @@ public class Player extends dogs.sim.Player {
 			
 			if (round == 1) {
 				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(allOwners);
-				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, new ParkLocation(25.0,25.0), 20);
+				int radius = 40*(this.otherOwners.size());
+				radius /= (double)(2.0*Math.PI);
+				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, new ParkLocation(25.0,25.0), radius);
 				this.positions = currentPositions;
 				this.graph = buildPlayerGraph(alphabeticalOwners);
 			}
@@ -140,13 +142,7 @@ public class Player extends dogs.sim.Player {
 					ownedByMe.add(dog);
 				}
 			}
-			// Owner alice = null;
-			// for(int i = 0; i < this.otherOwners.size(); i++){
-			// 	if(this.otherOwners.get(i).getNameAsEnum() == OwnerName.ALICE){
-			// 		alice = this.otherOwners.get(i);
-			// 	}
-			// }
-			//System.out.println(this.graph.getConnections(alice).toString());
+			List<Dog> allSortedDogs = new ArrayList<>();
 			List<Dog> sortedDogs = new ArrayList<>();
 			for(Dog d: ownedByMe){
 				sortedDogs.add(d);
