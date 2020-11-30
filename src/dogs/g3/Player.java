@@ -98,10 +98,12 @@ public class Player extends dogs.sim.Player {
 			
 			if (round == 1) {
 				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(allOwners);
-				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, new ParkLocation(25.0,25.0), 30);
+				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, new ParkLocation(25.0,25.0), 20);
 				this.positions = currentPositions;
 				this.graph = buildPlayerGraph(alphabeticalOwners);
 			}
+
+			//System.out.println(this.graph.toString());
 			
 			ParkLocation currentLocation = myOwner.getLocation(); 
 			ParkLocation desiredLocation = this.positions.get(myOwner.getNameAsString());
@@ -110,7 +112,6 @@ public class Player extends dogs.sim.Player {
 				directive.instruction = Instruction.MOVE;
 				ParkLocation next = getNextLocation(currentLocation, desiredLocation);
 				directive.parkLocation = next;
-				System.out.println("HERE");
 				return directive;
 			}
 	
@@ -129,18 +130,33 @@ public class Player extends dogs.sim.Player {
 			
 			//get waiting dogs and separate into others' dogs and my own dogs
 			List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
-			List<Dog> notOwnedByMe = new LinkedList<Dog>();
-			List<Dog> ownedByMe = new LinkedList<Dog>();
+			List<Dog> notOwnedByMe = new ArrayList<Dog>();
+			List<Dog> ownedByMe = new ArrayList<Dog>();
 			for (Dog dog: waitingDogs) {
-				if (dog.getOwner() != this.myOwner) {
+				if (!dog.getOwner().equals(this.myOwner)) {
 					notOwnedByMe.add(dog);
 					simPrinter.println("found");
 				} else {
 					ownedByMe.add(dog);
 				}
 			}
-
-			List<Dog> sortedDogs = sortDogsByRemainingWaitTime(waitingDogs);
+			// Owner alice = null;
+			// for(int i = 0; i < this.otherOwners.size(); i++){
+			// 	if(this.otherOwners.get(i).getNameAsEnum() == OwnerName.ALICE){
+			// 		alice = this.otherOwners.get(i);
+			// 	}
+			// }
+			//System.out.println(this.graph.getConnections(alice).toString());
+			List<Dog> sortedDogs = new ArrayList<>();
+			for(Dog d: ownedByMe){
+				sortedDogs.add(d);
+			}
+			List<Dog> sortedDogsNotMine = sortDogsByRemainingWaitTime(notOwnedByMe);
+			
+			for(Dog d: sortedDogsNotMine){
+				sortedDogs.add(d);
+			}
+			//out.println(waitingDogs.size() + " " + sortedDogs.size() + " " + sortedDogsNotMine.size() + " " + notOwnedByMe.size() + " " + ownedByMe.size());
 			for (Dog dog: sortedDogs) {
 				simPrinter.println(myOwner.getNameAsString() + " " + dog.getOwner().getNameAsString());
 			}
@@ -282,7 +298,7 @@ public class Player extends dogs.sim.Player {
 				}
     		}
 		}
-		simPrinter.println(myOwner.getNameAsString() + " " + count);
+		//System.out.println(myOwner.getNameAsString() + " " + count);
     	return waitingDogs;
 	}
 
@@ -301,9 +317,12 @@ public class Player extends dogs.sim.Player {
 		Collections.sort(dogList, new Comparator<Dog>() {
 			@Override
 			public int compare(Dog u1, Dog u2) {
-			  return u2.getWaitingTimeRemaining().compareTo(u1.getWaitingTimeRemaining());
+			  return u1.getWaitingTimeRemaining().compareTo(u2.getWaitingTimeRemaining());
 			}
 		  });
+		// for(Dog d: dogList){
+		// 	System.out.println(d.getWaitingTimeRemaining());
+		// }
 		return dogList;
 	}
 
