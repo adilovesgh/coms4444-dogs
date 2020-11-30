@@ -69,9 +69,6 @@ public class Player extends dogs.sim.Player {
             this.path = shortestPath(ownerLocations.get(myOwner));
             simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
         }
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~");
-        System.out.println(teamOwners);
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~");
         int roundWithAction = (round-1)/5 - 1;
         // TODO: if current location is not as expected? for flexibility in getting to new shape 
         if (roundWithAction < this.path.size()) {
@@ -258,7 +255,6 @@ public class Player extends dogs.sim.Player {
         nonRandos.add(myOwner);
         for (Owner person : otherOwners) {
             String signal = person.getCurrentSignal();
-            System.out.println(signal);
             if (signal != null && !signal.isEmpty()) {
                 nonRandos.add(person);
                 String name = person.getNameAsString();
