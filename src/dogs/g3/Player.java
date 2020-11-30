@@ -160,6 +160,7 @@ public class Player extends dogs.sim.Player {
 				this.positions = currentPositions;
 				directive.instruction = Instruction.CALL_SIGNAL;
 				directive.signalWord = "g3";
+				//System.out.println(directive.instruction.toString() + " " + directive.signalWord.toString());
 				return directive;
 			}
 
@@ -302,6 +303,7 @@ public class Player extends dogs.sim.Player {
 			directive.instruction = Instruction.NOTHING;
 			return directive;
 		} catch (Exception e) {
+			//System.out.println(e.toString());
 			e.printStackTrace();
 		}
 		Directive directive = new Directive();
