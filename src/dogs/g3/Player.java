@@ -19,6 +19,7 @@ import java.io.StringWriter;
 
 public class Player extends dogs.sim.Player {
 	private List<Owner> otherOwners;
+	private String identification_signal = "three";
 	private List<Dog> myDogs;
 	private Integer round;
 	private Owner myOwner;
@@ -146,21 +147,23 @@ public class Player extends dogs.sim.Player {
 			// }
 			if (round == 1) {
 				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(allOwners);
-				int radius = 40 * (this.otherOwners.size());
+				double radius = 40 * (allOwners.size()-1);
 				radius /= (double) (2.0 * Math.PI);
+				//System.out.println(radius + " " + allOwners.size());
+				radius = 20;
 				this.graph = buildPlayerGraph(alphabeticalOwners);
 				this.graph.graphType = this.graph.getGraphType(allOwners);
-				if(this.graph.graphType == GraphType.SPOKE){
-					numCenterPlayers = (int) Math.ceil((double) radius / 51.0);
-					radius = 30 * (this.otherOwners.size()-numCenterPlayers);
-					radius /= (double) (2.0 * Math.PI);
-				}
+				// if(this.graph.graphType == GraphType.SPOKE){
+				// 	numCenterPlayers = (int) Math.ceil((double) radius / 51.0);
+				// 	radius = 30 * (this.otherOwners.size()-numCenterPlayers);
+				// 	radius /= (double) (2.0 * Math.PI);
+				// }
 				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners,
-						new ParkLocation(25.0, 25.0), radius);
+						new ParkLocation(25.0, 25.0), (int)radius);
 				this.positions = currentPositions;
+				simPrinter.println("calling signal...");
 				directive.instruction = Instruction.CALL_SIGNAL;
-				directive.signalWord = "g3";
-				//System.out.println(directive.instruction.toString() + " " + directive.signalWord.toString());
+				directive.signalWord = this.identification_signal;
 				return directive;
 			}
 
@@ -192,7 +195,7 @@ public class Player extends dogs.sim.Player {
 			for (Dog dog : waitingDogs) {
 				if (!dog.getOwner().equals(this.myOwner)) {
 					notOwnedByMe.add(dog);
-					simPrinter.println("found");
+					//simPrinter.println("found");
 				} else {
 					ownedByMe.add(dog);
 				}
@@ -243,8 +246,8 @@ public class Player extends dogs.sim.Player {
 				Double ballColumn = requiredOwner.getLocation().getColumn();
 				Random r = new Random();
 				count += 1;
-				simPrinter.println(myOwner.getNameAsString() + " " + sortedDogs.size());
-				simPrinter.println(throwToOwnerName + " from " + myOwner.getNameAsString());
+				//simPrinter.println(myOwner.getNameAsString() + " " + sortedDogs.size());
+				//simPrinter.println(throwToOwnerName + " from " + myOwner.getNameAsString());
 				directive.parkLocation = new ParkLocation(ballRow, ballColumn);
 				return directive;
 			}
@@ -331,7 +334,7 @@ public class Player extends dogs.sim.Player {
 			for (Dog dog : otherOwner.getDogs()) {
 				if (dog.isWaitingForOwner(myOwner)) {
 					waitingDogs.add(dog);
-					simPrinter.println("Found Other Dog Thats Not Ours");
+					//simPrinter.println("Found Other Dog Thats Not Ours");
 					count += 1;
 				}
 			}
