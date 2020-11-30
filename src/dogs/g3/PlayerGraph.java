@@ -11,8 +11,15 @@ import dogs.sim.ParkLocation;
 import dogs.sim.SimPrinter;
 
 public class PlayerGraph {
+
+    public enum GraphType{
+        POLYGON,SPOKE,NETWORK
+    }
+
     HashMap<OwnerName, PlayerNode> owners;
+    GraphType graphType;
     public PlayerGraph(List<Owner> allOwners){
+        this.graphType = getGraphType(allOwners);
         owners = new HashMap<>();
         for(Owner owner: allOwners){
             addNode(owner);
@@ -22,6 +29,17 @@ public class PlayerGraph {
 
     private List<Owner> getNeighbors(Owner owner, List<Owner> allOwners){
         return new ArrayList<>();
+    }
+
+    public GraphType getGraphType(List<Owner> allOwners){
+        double dogConcentration = 0.0;
+        for(Owner o: allOwners){
+            dogConcentration += o.getDogs().size();
+        }
+        dogConcentration /= (double) allOwners.size();
+        graphType = dogConcentration>15.0 && allOwners.size()>9 ? GraphType.SPOKE : GraphType.POLYGON;
+        System.out.println(graphType);
+        return graphType;
     }
 
     private void addNode(Owner owner) {
