@@ -65,6 +65,17 @@ public class PlayerGraph {
         return node.getConnections();
     }
 
+    public void printGraph(SimPrinter simPrinter) {
+        simPrinter.println("------------Graph-----------");
+        for (OwnerName ownerName : this.owners.keySet()){
+            PlayerNode ownerNode = this.owners.get(ownerName);
+            List<OwnerName> ownerConnections = ownerNode.getConnections();
+            simPrinter.println(ownerName + "--" + ownerConnections);
+
+        }
+        simPrinter.println("----------------------------");
+    }
+
 }
 
 class PlayerNode{
