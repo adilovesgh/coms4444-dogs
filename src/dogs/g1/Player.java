@@ -91,7 +91,7 @@ public class Player extends dogs.sim.Player {
         //     simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
         // }
 
-        // TODO: if not at intended location
+        // if not at intended location
         if (steppingStone != path.size()) {
             directive.instruction = Instruction.MOVE;
             directive.parkLocation = this.path.get(steppingStone++);
@@ -123,21 +123,19 @@ public class Player extends dogs.sim.Player {
      *                          Min: 0      Max: 2 
      */
     private Directive throwToNext(Owner A, List<Owner> otherOwners, float nodeSeparation) {
-        // TODO: keep track of throws so that we don't keep throwing to the same dog 
+        // TODO: maybe throw in another direction to avoid overwhelming someone? 
         Owner B = new Owner(); // the next owner to trow to, determined later by who is available 
 
         Directive ret = new Directive();
         ret.instruction = Instruction.THROW_BALL;
 
-        // TODO: Sharon --> Currently prioritizes dogs based on how much time they have left to wait 
-        //                  Maybe dont pick dogs that have already reached their exercise goal 
-        //                  Prioritizze random dogs?
-        // TODO: Joseph --> pick which Node to throw to (0 = right at next owner, 3 = farthest possible from owner)
+        // TODO: Prioritize random dogs?
+        // pick which Node to throw to (0 = right at next owner, 3 = farthest possible from owner)
         List<Dog> waitingDogs = myDogsWaiting(A);
         
-        if (waitingDogs.size() == 0) { // TODO: call out something to say you have no dogs? 
+        if (waitingDogs.size() == 0) // TODO: call out something to say you have no dogs? 
             waitingDogs = getWaitingDogs(A, otherOwners);
-        }
+
         if (waitingDogs.size() == 0) {
             simPrinter.println("There are no waiting dogs for " + A.getNameAsString());
             ret.instruction = Instruction.NOTHING;
@@ -158,9 +156,8 @@ public class Player extends dogs.sim.Player {
         if (nonRandos.size() >= 2) { // we can throw to someone else that's smart!  
             // pick the next person in the cycle, ensuring that they fall within 40 meters
 
-            for (Owner o : nonRandos) {
-                simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + o.getLocation());
-            }
+            // for (Owner o : nonRandos) 
+            //     simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + o.getLocation());
 
             B = ownerCycle.get((findOwnerIndex(ownerCycle,A) + 1) % ownerCycle.size());
             
@@ -185,9 +182,8 @@ public class Player extends dogs.sim.Player {
             }
         }
         else { // case where nobody else is within the range
-            // TODO: throw in a random direction just to get some exercise? 
-            ret.instruction = Instruction.NOTHING;
-            return ret;
+            // throw in a random direction just to get some exercise? 
+            return randomThrow(A, ret);
         }
 
         Double Ax = A.getLocation().getRow();
@@ -294,25 +290,40 @@ public class Player extends dogs.sim.Player {
 
     private void findRandos(Owner myOwner, List<Owner> otherOwners) {
         nonRandos.add(myOwner);
+        List<String> teams = new ArrayList<String>(Arrays.asList("papaya", "two", "three", "four", "five"));
+
         for (Owner person : otherOwners) {
             String signal = person.getCurrentSignal();
-            if (signal != null && !signal.isEmpty()) {
+            if (signal != null && !signal.isEmpty() && teams.contains(signal)) {
                 nonRandos.add(person);
                 String name = person.getNameAsString();
-                List<String> teams = new ArrayList<String>(Arrays.asList("papaya", "two", "three", "four", "five"));
-                for (int i = 0; i < teams.size(); i++) {
-                    if (signal.equals(teams.get(i))) {
-                        if (teamOwners.get(i+1) == null)
-                            teamOwners.put(i+1, new ArrayList<String>());
-                        teamOwners.get(i+1).add(name);
-                    }
-                }
+                if (teamOwners.get(teams.indexOf(signal) + 1) == null)
+                    teamOwners.put(teams.indexOf(signal) + 1, new ArrayList<String>());
+                teamOwners.get(teams.indexOf(signal) + 1).add(name);        
             }
-            else
+            else {
                 randos.add(person);
+            }
         }
         for (Owner person : randos)
             simPrinter.println(person.getNameAsString() + " is a random player");
+    }
+
+    private Directive randomThrow(Owner myOwner, Directive directive) {
+        ParkLocation ret = new ParkLocation(); 
+        while (distanceBetweenTwoPoints(ret, myOwner.getLocation()) < 40) { 
+            double randomAngle = Math.toRadians(random.nextDouble() * 360);
+            double ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(randomAngle);
+            double ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(randomAngle);
+            if(ballRow < 0.0) ballRow = 0.0;
+            if(ballRow > ParkLocation.PARK_SIZE - 1) ballRow = ParkLocation.PARK_SIZE - 1;
+            if(ballColumn < 0.0) ballColumn = 0.0;
+            if(ballColumn > ParkLocation.PARK_SIZE - 1) ballColumn = ParkLocation.PARK_SIZE - 1;
+            ret = new ParkLocation(ballRow, ballColumn); 
+            directive.parkLocation = ret;
+        }
+        simPrinter.println(myOwner.getNameAsString() + " had to do a random throw that was " + distanceBetweenTwoPoints(ret, myOwner.getLocation()) + " meters long");
+        return directive;
     }
 
     /**
