@@ -21,6 +21,7 @@ public class Player extends dogs.sim.Player {
     private List<Owner> ownerCycle;
     private int steppingStone;
     private HashMap<Integer, List<String>> teamOwners;
+    private boolean waitToStart;
 	
     /**
      * Player constructor
@@ -41,6 +42,7 @@ public class Player extends dogs.sim.Player {
         this.ownerCycle = new ArrayList<Owner>();
         this.steppingStone = 0;
         this.teamOwners = new HashMap<>();
+        this.waitToStart = false;
      }
 
     /**
@@ -92,19 +94,20 @@ public class Player extends dogs.sim.Player {
         if (steppingStone != path.size()) {
             directive.instruction = Instruction.MOVE;
             directive.parkLocation = this.path.get(steppingStone++);
-            // maybe add a message for other players saying we're still moving into position?
             return directive;
         }
 
-        simPrinter.println(myOwner.getNameAsString() + " is at target location");
-        // stay away from the random
+        // TODO: stay away from the random/deal with random
         updateRandos(myOwner, otherOwners);
+        // updateWaiting(otherOwners);
 
-        // keeps track of random player's locations 
-        for (Owner o : randos) {
-            ownerLocations.put(o, o.getLocation());
-            simPrinter.println("RANDOM: " + o.getNameAsString() + "'s position: " + o.getLocationAsString());
-        }
+        // TODO: do something while waiting for the rest to get into position. Maybe throw to the center? 
+        // if (!waitToStart) {
+        //     // simPrinter.println(myOwner.getNameAsString() + " is at target location");
+        //     directive.instruction = Instruction.CALL_SIGNAL;
+        //     directive.signalWord = "here";
+        //     return directive;
+        // }
 
         // OPTION: change how far each node is from the other one in the isosceles triangle
         // float nodeSeparation = 0.0f;
@@ -223,6 +226,14 @@ public class Player extends dogs.sim.Player {
                 return haystack.get(i);
         }
         return null; 
+    }
+
+    private void updateWaiting(List<Owner> otherOwners) {
+        for (Owner person : otherOwners) {
+            if (person.getCurrentAction() == Instruction.THROW_BALL)
+                waitToStart = true;
+        }
+        waitToStart = true;
     }
 
     private void updateRandos(Owner me, List<Owner> otherOwners) {
@@ -438,7 +449,6 @@ public class Player extends dogs.sim.Player {
                 itr.remove();
             }
         }
-
         return breedsBySpeed.indexOf(dog.getBreed());
     }
 
