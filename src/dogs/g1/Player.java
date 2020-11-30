@@ -24,6 +24,7 @@ public class Player extends dogs.sim.Player {
     private HashMap<Owner, ParkLocation> ownerLocations;
     private List<Owner> ownerCycle;
     private int steppingStone;
+    private HashMap<Integer, List<String>> teamOwners;
 	
     /**
      * Player constructor
@@ -43,6 +44,7 @@ public class Player extends dogs.sim.Player {
         this.ownerLocations = new HashMap<Owner, ParkLocation>();
         this.ownerCycle = new ArrayList<Owner>();
         this.steppingStone = 0;
+        this.teamOwners = new HashMap<>();
      }
 
     /**
@@ -58,8 +60,8 @@ public class Player extends dogs.sim.Player {
         Directive directive = new Directive();
         if (round == 1) { // gets starting location, calls out name to find random players
             directive.instruction = Instruction.CALL_SIGNAL;
-            directive.signalWord = myOwner.getNameAsString();
-            simPrinter.println(myOwner.getNameAsString() + " called out " + myOwner.getNameAsString() + " in round " + round);
+            directive.signalWord = "one";
+            simPrinter.println(myOwner.getNameAsString() + " called out " + directive.signalWord + " in round " + round);
             return directive;
         }
         else if (round == 6) { // fills ups randos to spot the random player, make starting config with nonrandom players
@@ -72,7 +74,6 @@ public class Player extends dogs.sim.Player {
         // checkForReshape(myOwner, otherOwners);
 
         // private void checkForReshape(Owner me, List<Owner> others) {
-
         //     // find closest entry point in cycle to place Owner
         //     // adjust path, 
         //     nonRandos.add(myOwner);
@@ -211,10 +212,6 @@ public class Player extends dogs.sim.Player {
         return ret;
     }
 
-    private boolean sameLocation(ParkLocation a, ParkLocation b) {
-        return a.getColumn() == b.getColumn() && a.getRow() == b.getRow();
-    }
-
     private int findOwnerIndex(List<Owner> haystack, Owner needle) {
         for (int i = 0; i < haystack.size(); i++) {
             if (haystack.get(i).getNameAsString().equals(needle.getNameAsString()))
@@ -284,10 +281,21 @@ public class Player extends dogs.sim.Player {
     private void findRandos(Owner myOwner, List<Owner> otherOwners) {
         nonRandos.add(myOwner);
         for (Owner person : otherOwners) {
-            if (!(person.getCurrentSignal().equals(person.getNameAsString()))) 
-                randos.add(person);
-            else
+            String signal = person.getCurrentSignal();
+            if (signal != null && !signal.isEmpty()) {
                 nonRandos.add(person);
+                String name = person.getNameAsString();
+                List<String> teams = new ArrayList<String>(Arrays.asList("one", "two", "three", "four", "five"));
+                for (int i = 0; i < teams.size(); i++) {
+                    if (signal.equals(teams.get(i))) {
+                        if (teamOwners.get(i+1) == null)
+                            teamOwners.put(i+1, new ArrayList<String>());
+                        teamOwners.get(i+1).add(name);
+                    }
+                }
+            }
+            else
+                randos.add(person);
         }
         for (Owner person : randos)
             simPrinter.println(person.getNameAsString() + " is a random player");
