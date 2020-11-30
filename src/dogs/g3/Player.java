@@ -108,6 +108,7 @@ public class Player extends dogs.sim.Player {
 				directive.instruction = Instruction.MOVE;
 				ParkLocation next = getNextLocation(currentLocation, desiredLocation);
 				directive.parkLocation = next;
+				System.out.println("HERE");
 				return directive;
 			}
 	
@@ -149,7 +150,7 @@ public class Player extends dogs.sim.Player {
 						break;
 					}
 				}
-
+				
 				Double ballRow = requiredOwner.getLocation().getRow();
 				Double ballColumn = requiredOwner.getLocation().getColumn();
 				Random r = new Random();
