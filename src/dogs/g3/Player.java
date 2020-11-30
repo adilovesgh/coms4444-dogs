@@ -19,6 +19,7 @@ public class Player extends dogs.sim.Player {
 	private Integer round;
 	private Owner myOwner;
 	private double listeningProbability = 0.2;
+	private List<Dog> allDogs;
 	HashMap<String, ParkLocation> positions; 
 	HashMap<String, String> nextOwners;
 	PlayerGraph graph; 
@@ -50,14 +51,21 @@ public class Player extends dogs.sim.Player {
 		return ownerToLocation;
 	}
 
+	/**
+	* Build a Graph with owners as nodes
+	* @param owners list of owners
+	*/
 	private PlayerGraph buildPlayerGraph(List<Owner> owners) {
 		PlayerGraph graph = new PlayerGraph(owners);
-		for (int i=0; i < owners.size()-1; i++) {
-			Owner current = owners.get(i);
-			Owner next = owners.get(i+1);
-			graph.addConnection(current, next);
+		//add an edge between each pair of owners within 40 meters of each other
+		for (Owner o1 : owners){
+			for (Owner o2 : owners){
+				if ((o1.getNameAsEnum() != o2.getNameAsEnum()) && (distanceBetweenOwners(o1, o2) <= 40.0)) {
+					graph.addConnection(o1, o2);
+				}
+			}
 		}
-		graph.addConnection(owners.get(owners.size()-1), owners.get(0));
+		graph.printGraph(simPrinter);
 		return graph;
 	}
 
@@ -86,6 +94,7 @@ public class Player extends dogs.sim.Player {
     public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
 		this.round = round;
 		this.myDogs = myOwner.getDogs();
+		this.allDogs = getAllDogs(myOwner, otherOwners);
 		this.otherOwners = otherOwners;
 		this.myOwner = myOwner;
 
@@ -98,9 +107,7 @@ public class Player extends dogs.sim.Player {
 			
 			if (round == 1) {
 				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(allOwners);
-				int radius = 40*(this.otherOwners.size());
-				radius /= (double)(2.0*Math.PI);
-				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, new ParkLocation(25.0,25.0), radius);
+				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, new ParkLocation(25.0,25.0), 20);
 				this.positions = currentPositions;
 				this.graph = buildPlayerGraph(alphabeticalOwners);
 			}
@@ -142,7 +149,13 @@ public class Player extends dogs.sim.Player {
 					ownedByMe.add(dog);
 				}
 			}
-			List<Dog> allSortedDogs = new ArrayList<>();
+			// Owner alice = null;
+			// for(int i = 0; i < this.otherOwners.size(); i++){
+			// 	if(this.otherOwners.get(i).getNameAsEnum() == OwnerName.ALICE){
+			// 		alice = this.otherOwners.get(i);
+			// 	}
+			// }
+			//System.out.println(this.graph.getConnections(alice).toString());
 			List<Dog> sortedDogs = new ArrayList<>();
 			for(Dog d: ownedByMe){
 				sortedDogs.add(d);
@@ -159,25 +172,32 @@ public class Player extends dogs.sim.Player {
 			if (!sortedDogs.isEmpty()) {
 				directive.instruction = Instruction.THROW_BALL;
 				directive.dogToPlayWith = sortedDogs.get(0);
-				List<OwnerName> neighbors = this.graph.getConnections(myOwner);
-				OwnerName throwToOwnerName = neighbors.get(0);
-				Owner requiredOwner = null; 
+				List<OwnerName> neighborNames = this.graph.getConnections(myOwner);
+				
+				//throw the ball toward the least occupied neighbor
+				List<Owner> neighbors = new ArrayList<>();
+				for (Owner owner : this.otherOwners) {
+					if (neighborNames.contains(owner.getNameAsEnum())) {
+						neighbors.add(owner);
+					}
+				}
+				Owner requiredOwner = getLeastBusyNeighbor(neighbors, this.allDogs);
+				OwnerName throwToOwnerName = requiredOwner.getNameAsEnum();
+
+				/*Owner requiredOwner = null; 
 				for (Owner throwOwner: this.otherOwners) {
 					if (throwOwner.getNameAsEnum() == throwToOwnerName) {
 						requiredOwner = throwOwner;
 						break;
 					}
-				}
+				}*/
 				
 				Double ballRow = requiredOwner.getLocation().getRow();
 				Double ballColumn = requiredOwner.getLocation().getColumn();
 				Random r = new Random();
 				count += 1;
 				simPrinter.println(myOwner.getNameAsString() + " " + sortedDogs.size());
-
-
 				simPrinter.println(throwToOwnerName + " from " + myOwner.getNameAsString());
-
 				directive.parkLocation = new ParkLocation(ballRow, ballColumn);
 				return directive;
 			}
@@ -362,4 +382,55 @@ public class Player extends dogs.sim.Player {
 		return dist;
 	}
 
+	/**
+	* Get the least occupied owner based on 
+	* the # of dogs waiting for them + # of dogs heading toward them
+	* @param neighbors    a list of neighbor owners
+	* @param allDogs      a list of all dogs in the park
+	**/
+	private Owner getLeastBusyNeighbor(List<Owner> neighbors, List<Dog> allDogs) {
+		HashMap<Owner, Integer> busyMap = new HashMap<Owner, Integer>();
+		for (Owner owner : neighbors) {
+			busyMap.put(owner, 0);
+		}
+
+		//loop through all dogs to check if they are heading to/waiting for someone
+		for (Dog dog : allDogs) {
+			if (dog.isWaitingForPerson()) {
+				Owner ownerWaited = dog.getOwnerWaitingFor();
+				if (neighbors.contains(ownerWaited)){
+					busyMap.put(ownerWaited, busyMap.get(ownerWaited) + 1);
+				}
+			}
+
+			if (dog.isHeadingForPerson()) {
+				Owner ownerHeadingFor = dog.getOwnerHeadingFor();
+				if (neighbors.contains(ownerHeadingFor)){
+					busyMap.put(ownerHeadingFor, busyMap.get(ownerHeadingFor) + 1);
+				}
+			}
+		}
+
+		//find the neighbor with the least number of dogs waiting for/heading to 
+		Owner leastBusyOwner = neighbors.get(0);
+		for (Owner neighbor : neighbors) {
+			if (busyMap.get(neighbor) < busyMap.get(leastBusyOwner)){
+				leastBusyOwner = neighbor;
+			}
+		}
+
+		return leastBusyOwner;
+	}
+
+	/**
+	* return a list of all dogs in the configuration
+	**/
+	private List<Dog> getAllDogs(Owner myOwner, List<Owner> otherOwners) {
+		List<Dog> allDogs = new ArrayList<>();
+		allDogs.addAll(myOwner.getDogs());
+		for (Owner owner : otherOwners){
+			allDogs.addAll(owner.getDogs());
+		}
+		return allDogs;
+	}
 }
