@@ -22,6 +22,8 @@ public class Player extends dogs.sim.Player {
 	HashMap<String, ParkLocation> positions; 
 	HashMap<String, String> nextOwners;
 	PlayerGraph graph; 
+	private int count = 0;
+
 	
     /**
      * Player constructor
@@ -132,12 +134,16 @@ public class Player extends dogs.sim.Player {
 			for (Dog dog: waitingDogs) {
 				if (dog.getOwner() != this.myOwner) {
 					notOwnedByMe.add(dog);
+					simPrinter.println("found");
 				} else {
 					ownedByMe.add(dog);
 				}
 			}
 
 			List<Dog> sortedDogs = sortDogsByRemainingWaitTime(waitingDogs);
+			for (Dog dog: sortedDogs) {
+				simPrinter.println(myOwner.getNameAsString() + " " + dog.getOwner().getNameAsString());
+			}
 			if (!sortedDogs.isEmpty()) {
 				directive.instruction = Instruction.THROW_BALL;
 				directive.dogToPlayWith = sortedDogs.get(0);
@@ -154,7 +160,9 @@ public class Player extends dogs.sim.Player {
 				Double ballRow = requiredOwner.getLocation().getRow();
 				Double ballColumn = requiredOwner.getLocation().getColumn();
 				Random r = new Random();
-				ballRow += r.nextInt(5 + 5) - 5;
+				count += 1;
+				simPrinter.println(myOwner.getNameAsString() + " " + sortedDogs.size());
+
 
 				simPrinter.println(throwToOwnerName + " from " + myOwner.getNameAsString());
 
@@ -257,17 +265,24 @@ public class Player extends dogs.sim.Player {
     }
     
     private List<Dog> getWaitingDogs(Owner myOwner, List<Owner> otherOwners) {
-    	List<Dog> waitingDogs = new ArrayList<>();
+		List<Dog> waitingDogs = new ArrayList<>();
+		int count = 0; 
     	for(Dog dog : myOwner.getDogs()) {
-    		if(dog.isWaitingForItsOwner())
+    		if(dog.isWaitingForItsOwner()) {
     			waitingDogs.add(dog);
+				count += 1;
+			}
     	}
     	for(Owner otherOwner : otherOwners) {
     		for(Dog dog : otherOwner.getDogs()) {
-    			if(dog.isWaitingForOwner(myOwner))
+				if(dog.isWaitingForOwner(myOwner)) {
     				waitingDogs.add(dog);
+					simPrinter.println("Found Other Dog Thats Not Ours");
+					count += 1;
+				}
     		}
-    	}
+		}
+		simPrinter.println(myOwner.getNameAsString() + " " + count);
     	return waitingDogs;
 	}
 
@@ -286,7 +301,7 @@ public class Player extends dogs.sim.Player {
 		Collections.sort(dogList, new Comparator<Dog>() {
 			@Override
 			public int compare(Dog u1, Dog u2) {
-			  return u1.getWaitingTimeRemaining().compareTo(u2.getWaitingTimeRemaining());
+			  return u2.getWaitingTimeRemaining().compareTo(u1.getWaitingTimeRemaining());
 			}
 		  });
 		return dogList;
