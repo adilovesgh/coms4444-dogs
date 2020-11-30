@@ -6,12 +6,8 @@ import java.util.*;
 
 import java.lang.Math;
 
-import dogs.sim.Directive;
-import dogs.sim.Dog;
-import dogs.sim.Owner;
+import dogs.sim.*;
 import dogs.sim.Owner.OwnerName;
-import dogs.sim.SimPrinter;
-import dogs.sim.ParkLocation;
 import dogs.sim.Directive.Instruction;
 
 
@@ -117,13 +113,16 @@ public class Player extends dogs.sim.Player {
         // for (Dog d : waitingDogs) 
         //     simPrinter.println("Dog " + d.getBreed() + " has " + d.getWaitingTimeRemaining() + " wait time remaining");
         // simPrinter.println();
+        int N = 0;
 
-        if (waitingDogs.size() >= 1)
-            ret.dogToPlayWith = waitingDogs.get(0); 
-        else 
+        if (waitingDogs.size() >= 1) {
+            ret.dogToPlayWith = waitingDogs.get(0);
+            N = getNodeForDog(waitingDogs, ret.dogToPlayWith);
+        }
+        else {
             simPrinter.println("There are no waiting dogs for " + A.getNameAsString());
+        }
 
-        int N = 3; 
         float offset = N + N*nodeSeparation; // distance between node and next Owner (top of isosceles)
         
         boolean foundTarget = false; 
@@ -384,6 +383,29 @@ public class Player extends dogs.sim.Player {
             }
         });
         return waitingDogs;
+    }
+
+    private Integer getNodeForDog(List<Dog> waitingDogs, Dog dog) {
+        Set<DogReference.Breed> waitingBreeds = new HashSet<>();
+        for (Dog waitingDog: waitingDogs) {
+            waitingBreeds.add(waitingDog.getBreed());
+        }
+
+        ArrayList<DogReference.Breed> breedsBySpeed = new ArrayList<>();
+        breedsBySpeed.add(DogReference.Breed.TERRIER);
+        breedsBySpeed.add(DogReference.Breed.SPANIEL);
+        breedsBySpeed.add(DogReference.Breed.POODLE);
+        breedsBySpeed.add(DogReference.Breed.LABRADOR);
+
+        Iterator<DogReference.Breed> itr = breedsBySpeed.iterator();
+        while (itr.hasNext()) {
+            DogReference.Breed breed = itr.next();
+            if (!waitingBreeds.contains(breed)) {
+                itr.remove();
+            }
+        }
+
+        return breedsBySpeed.indexOf(dog.getBreed());
     }
 
     // Testing - run with "java dogs/g1/Player.java" in src folder
