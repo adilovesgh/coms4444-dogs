@@ -6,12 +6,8 @@ import java.util.*;
 
 import java.lang.Math;
 
-import dogs.sim.Directive;
-import dogs.sim.Dog;
-import dogs.sim.Owner;
+import dogs.sim.*;
 import dogs.sim.Owner.OwnerName;
-import dogs.sim.SimPrinter;
-import dogs.sim.ParkLocation;
 import dogs.sim.Directive.Instruction;
 import dogs.sim.DogReference.Breed;
 
@@ -143,14 +139,15 @@ public class Player extends dogs.sim.Player {
             ret.instruction = Instruction.NOTHING;
             return ret;
         }
-    
+        
         ret.dogToPlayWith = waitingDogs.get(0); 
+        int N = getNodeForDog(waitingDogs, ret.dogToPlayWith);
             
-        int N = 0; // Terrier breed
-        if (waitingDogs.get(0).getBreed() == Breed.SPANIEL) N = 1;
-        else if (waitingDogs.get(0).getBreed() == Breed.POODLE) N = 2;
-        else if (waitingDogs.get(0).getBreed() == Breed.LABRADOR) N = 3; 
-
+        // int N = 0; // Terrier breed
+        // if (waitingDogs.get(0).getBreed() == Breed.SPANIEL) N = 1;
+        // else if (waitingDogs.get(0).getBreed() == Breed.POODLE) N = 2;
+        // else if (waitingDogs.get(0).getBreed() == Breed.LABRADOR) N = 3; 
+      
         float offset = N + N*nodeSeparation; // distance between node and next Owner (top of isosceles)
         
         boolean foundTarget = false; 
@@ -420,6 +417,29 @@ public class Player extends dogs.sim.Player {
     			waitingDogs.add(dog);
     	}
         return waitingDogs;
+    } 
+    
+    private Integer getNodeForDog(List<Dog> waitingDogs, Dog dog) {
+        Set<DogReference.Breed> waitingBreeds = new HashSet<>();
+        for (Dog waitingDog: waitingDogs) {
+            waitingBreeds.add(waitingDog.getBreed());
+        }
+
+        ArrayList<DogReference.Breed> breedsBySpeed = new ArrayList<>();
+        breedsBySpeed.add(DogReference.Breed.TERRIER);
+        breedsBySpeed.add(DogReference.Breed.SPANIEL);
+        breedsBySpeed.add(DogReference.Breed.POODLE);
+        breedsBySpeed.add(DogReference.Breed.LABRADOR);
+
+        Iterator<DogReference.Breed> itr = breedsBySpeed.iterator();
+        while (itr.hasNext()) {
+            DogReference.Breed breed = itr.next();
+            if (!waitingBreeds.contains(breed)) {
+                itr.remove();
+            }
+        }
+
+        return breedsBySpeed.indexOf(dog.getBreed());
     }
 
     // Testing - run with "java dogs/g1/Player.java" in src folder
