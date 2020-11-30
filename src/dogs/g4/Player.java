@@ -10,6 +10,16 @@ public class Player extends dogs.sim.Player {
 
     private String firstSignal = "zythum";
     private List<Owner> coOwners = new ArrayList<>();
+    // private List<Owner> collaboraters new ArrayList<>();
+    private List<Owner> g1Owners = new ArrayList<>();
+    private List<Owner> g2Owners = new ArrayList<>();
+    private List<Owner> g3Owners = new ArrayList<>();
+    private List<Owner> g4Owners = new ArrayList<>();
+    private List<Owner> g5Owners = new ArrayList<>();
+
+
+
+    HashMap<String, Owner> collaboraters = new HashMap<String, Owner>();//Creating HashMap   
 	
     /**
      * Player constructor
@@ -48,8 +58,26 @@ public class Player extends dogs.sim.Player {
                 if (owner.getCurrentSignal().equals(firstSignal)) {
                     this.coOwners.add(owner);
                 }
+                if (owner.getCurrentSignal().equals("papaya")) {
+                    this.g1Owners.add(owner);
+                }
+                if (owner.getCurrentSignal().equals("two")) {
+                    this.g2Owners.add(owner);
+                }
+                if (owner.getCurrentSignal().equals("three")) {
+                    this.g3Owners.add(owner);
+                }
+                if (owner.getCurrentSignal().equals("zythum")) {
+                    this.g4Owners.add(owner);
+                }
+                if (owner.getCurrentSignal().equals("cuprodescloizite")) {
+                    this.g5Owners.add(owner);
+                }
             }
         }
+
+        // simPrinter.println("Owner List" + g4Owners);
+        System.out.println("Owner List" + g4Owners);
 
         Map<Owner, ParkLocation> locations = getCircularLocations(200, 200, myOwner, 40.0);
         ParkLocation finalLocation = locations.get(myOwner);
