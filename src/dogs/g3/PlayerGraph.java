@@ -42,6 +42,11 @@ public class PlayerGraph {
         }
     }
 
+    public List<OwnerName> getConnections(Owner owner) {
+        PlayerNode node = this.owners.get(owner.getNameAsEnum());
+        return node.getConnections();
+    }
+
 }
 
 class PlayerNode{
@@ -55,5 +60,9 @@ class PlayerNode{
 
     public void addNeighbor(Owner owner) {
         this.connectedOwners.add(owner.getNameAsEnum());
-    }   
+    }  
+
+    public List<OwnerName> getConnections() {
+        return this.connectedOwners;
+    }
 }

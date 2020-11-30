@@ -7,6 +7,7 @@ import dogs.sim.Directive.Instruction;
 import dogs.sim.Dictionary;
 import dogs.sim.Dog;
 import dogs.sim.Owner;
+import dogs.sim.Owner.OwnerName;
 import dogs.sim.ParkLocation;
 import dogs.sim.SimPrinter;
 import java.io.StringWriter;
@@ -67,11 +68,8 @@ public class Player extends dogs.sim.Player {
 		}
 		double x_difference_normalized = x_difference/distance;
 		double y_difference_normalized = y_difference/distance;
-		simPrinter.println(x_difference_normalized);
-		simPrinter.println(y_difference_normalized);
 		return new ParkLocation(currentLocation.getRow() + x_difference_normalized*2, currentLocation.getColumn() + y_difference_normalized*2);
 	}
-
 
 
     /**
@@ -98,7 +96,7 @@ public class Player extends dogs.sim.Player {
 			
 			if (round == 1) {
 				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(allOwners);
-				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, new ParkLocation(25.0,25.0), 20);
+				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, new ParkLocation(25.0,25.0), 30);
 				this.positions = currentPositions;
 				this.graph = buildPlayerGraph(alphabeticalOwners);
 			}
@@ -126,8 +124,6 @@ public class Player extends dogs.sim.Player {
 			}
 			*/
 			
-			
-	
 			//get waiting dogs and separate into others' dogs and my own dogs
 			List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
 			List<Dog> notOwnedByMe = new LinkedList<Dog>();
@@ -139,7 +135,36 @@ public class Player extends dogs.sim.Player {
 					ownedByMe.add(dog);
 				}
 			}
+
+			List<Dog> sortedDogs = sortDogs(waitingDogs);
+			if (!sortedDogs.isEmpty()) {
+				directive.instruction = Instruction.THROW_BALL;
+				directive.dogToPlayWith = sortedDogs.get(0);
+				List<OwnerName> neighbors = this.graph.getConnections(myOwner);
+				OwnerName throwToOwnerName = neighbors.get(0);
+				Owner requiredOwner = null; 
+				for (Owner throwOwner: this.otherOwners) {
+					if (throwOwner.getNameAsEnum() == throwToOwnerName) {
+						requiredOwner = throwOwner;
+						break;
+					}
+				}
+
+				Double ballRow = requiredOwner.getLocation().getRow();
+				Double ballColumn = requiredOwner.getLocation().getColumn();
+				Random r = new Random();
+				ballRow += r.nextInt(5 + 5) - 5;
+
+				simPrinter.println(throwToOwnerName + " from " + myOwner.getNameAsString());
+
+				directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+				return directive;
+			}
+
 			
+
+			
+			/*
 	
 			//if any of my own dogs are waiting, throw the ball for the least exercised dog to some other owner
 			if (!ownedByMe.isEmpty()){
@@ -209,6 +234,7 @@ public class Player extends dogs.sim.Player {
 				directive.parkLocation = new ParkLocation(ballRow, ballColumn);
 				return directive;
 			}
+			*/
 	
 			// otherwise do nothing
 			directive.instruction = Instruction.NOTHING;
