@@ -58,13 +58,14 @@ public class Player extends dogs.sim.Player {
         Directive directive = new Directive();
         if (round == 1) { // gets starting location, calls out name to find random players
             directive.instruction = Instruction.CALL_SIGNAL;
-            directive.signalWord = "one";
+            directive.signalWord = "papaya";
             simPrinter.println(myOwner.getNameAsString() + " called out " + directive.signalWord + " in round " + round);
             return directive;
         }
         else if (round == 6) { // fills ups randos to spot the random player, make starting config with nonrandom players
             findRandos(myOwner, otherOwners);
             updateLocations();
+            // TODO: this breaks with random players!! make sure the circuits and shapes are preserved
             this.path = shortestPath(ownerLocations.get(myOwner));
             simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
         }
@@ -260,7 +261,6 @@ public class Player extends dogs.sim.Player {
             else
                 newOwnerCycle.add(findOwner(otherOwners, o));
         }
-
         this.randos = newRandos;
         this.nonRandos = newNonRandos; 
         this.ownerCycle = newOwnerCycle;
@@ -299,7 +299,7 @@ public class Player extends dogs.sim.Player {
             if (signal != null && !signal.isEmpty()) {
                 nonRandos.add(person);
                 String name = person.getNameAsString();
-                List<String> teams = new ArrayList<String>(Arrays.asList("one", "two", "three", "four", "five"));
+                List<String> teams = new ArrayList<String>(Arrays.asList("papaya", "two", "three", "four", "five"));
                 for (int i = 0; i < teams.size(); i++) {
                     if (signal.equals(teams.get(i))) {
                         if (teamOwners.get(i+1) == null)
@@ -409,10 +409,6 @@ public class Player extends dogs.sim.Player {
      */
     private List<Dog> getWaitingDogs(Owner myOwner, List<Owner> otherOwners) {
         List<Dog> waitingDogs = new ArrayList<>();
-    	for(Dog dog : myOwner.getDogs()) {
-    		if(dog.isWaitingForOwner(myOwner))
-    			waitingDogs.add(dog);
-    	}
     	for(Owner otherOwner : otherOwners) {
     		for(Dog dog : otherOwner.getDogs()) {
     			if(dog.isWaitingForOwner(myOwner))
@@ -427,12 +423,26 @@ public class Player extends dogs.sim.Player {
         return waitingDogs;
     }
 
-    private List<Dog> myDogsWaiting(Owner myOwner) {
+    private List<Dog> myDogsWaiting(Owner myOwner) { 
         List<Dog> waitingDogs = new ArrayList<>();
     	for(Dog dog : myOwner.getDogs()) {
     		if(dog.isWaitingForOwner(myOwner))
     			waitingDogs.add(dog);
-    	}
+        }
+        Collections.sort(waitingDogs, new Comparator<Dog>() {
+            @Override public int compare(Dog d1, Dog d2) {
+                return d1.getExerciseTimeCompleted().compareTo(d2.getExerciseTimeCompleted());
+            }
+        });
+
+        // dont exercise dogs that are already exercised
+        Iterator<Dog> itr = waitingDogs.iterator();
+        while (itr.hasNext()) {
+            Dog d = itr.next();
+            if (d.getExerciseTimeRemaining() == 0.0) {
+                itr.remove();
+            }
+        }
         return waitingDogs;
     } 
     
