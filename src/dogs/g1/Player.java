@@ -99,15 +99,15 @@ public class Player extends dogs.sim.Player {
 
         // TODO: stay away from the random/deal with random
         updateRandos(myOwner, otherOwners);
-        // updateWaiting(otherOwners);
+        updateWaiting();
 
         // TODO: do something while waiting for the rest to get into position. Maybe throw to the center? 
-        // if (!waitToStart) {
-        //     // simPrinter.println(myOwner.getNameAsString() + " is at target location");
-        //     directive.instruction = Instruction.CALL_SIGNAL;
-        //     directive.signalWord = "here";
-        //     return directive;
-        // }
+        if (!waitToStart) {
+            simPrinter.println(myOwner.getNameAsString() + " is at target location");
+            directive.instruction = Instruction.CALL_SIGNAL;
+            directive.signalWord = "here";
+            return directive;
+        }
 
         // OPTION: change how far each node is from the other one in the isosceles triangle
         // float nodeSeparation = 0.0f;
@@ -228,12 +228,18 @@ public class Player extends dogs.sim.Player {
         return null; 
     }
 
-    private void updateWaiting(List<Owner> otherOwners) {
-        for (Owner person : otherOwners) {
+    private void updateWaiting() {
+        boolean everyoneSignaledHere = true;
+        for (Owner person : nonRandos) {
+            // simPrinter.println(person.getNameAsString() + " did " + person.getCurrentAction()); 
+            String signal = person.getCurrentSignal();
             if (person.getCurrentAction() == Instruction.THROW_BALL)
                 waitToStart = true;
+            if (person.getCurrentAction() != Instruction.CALL_SIGNAL && signal != null && !signal.isEmpty() && !signal.equals("here"))
+                everyoneSignaledHere = false;
         }
-        waitToStart = true;
+        if (everyoneSignaledHere)
+            waitToStart = true;
     }
 
     private void updateRandos(Owner me, List<Owner> otherOwners) {
