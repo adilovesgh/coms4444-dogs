@@ -77,13 +77,14 @@ public class Player extends dogs.sim.Player {
         Double initialX = 25.0;
         Double initialY = 25.0;
 
-        Double delta = 40.0;
+        Double deltaX = 40.0;
+        Double deltaY = 1.1;
 
         if (this.myInstance % 2 == 0) {
-            return new ParkLocation(initialX, initialY);
+            return new ParkLocation(initialX, initialY + deltaY*(myInstance/2));
         }
         else {
-            return new ParkLocation(initialX + delta, initialY);
+            return new ParkLocation(initialX + deltaX, initialY + deltaY*((int)(myInstance-1)/2));
         }
     }
 
