@@ -137,7 +137,7 @@ public class Player extends dogs.sim.Player {
 				}
 			}
 
-			List<Dog> sortedDogs = sortDogs(waitingDogs);
+			List<Dog> sortedDogs = sortDogsByRemainingWaitTime(waitingDogs);
 			if (!sortedDogs.isEmpty()) {
 				directive.instruction = Instruction.THROW_BALL;
 				directive.dogToPlayWith = sortedDogs.get(0);
@@ -277,6 +277,16 @@ public class Player extends dogs.sim.Player {
 			@Override
 			public int compare(Dog u1, Dog u2) {
 			  return compareDogs(u1, u2);
+			}
+		  });
+		return dogList;
+	}
+
+	private List<Dog> sortDogsByRemainingWaitTime(List<Dog> dogList){
+		Collections.sort(dogList, new Comparator<Dog>() {
+			@Override
+			public int compare(Dog u1, Dog u2) {
+			  return u1.getWaitingTimeRemaining().compareTo(u2.getWaitingTimeRemaining());
 			}
 		  });
 		return dogList;
