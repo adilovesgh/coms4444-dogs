@@ -138,22 +138,21 @@ public class Player extends dogs.sim.Player {
 		simPrinter.println("WAITING ON " + myOwner.getNameAsString() + ": " + waitingDogs);
 		if(waitingDogs.size() > 0){ 
 			directive.instruction = Instruction.THROW_BALL;
-			directive.dogToPlayWith = getLeastTiredDog(waitingDogs);
-			if (directive.dogToPlayWith == null)
-				directive.dogToPlayWith = getLongestWaitingDog(waitingDogs);
-			simPrinter.println("THOWING FOR " + directive.dogToPlayWith.getOwner().getNameAsString() + "'s " + directive.dogToPlayWith.getBreed());
+			//directive.dogToPlayWith = getLeastTiredDog(waitingDogs);
+			directive.dogToPlayWith = getLongestWaitingDog(waitingDogs);
+			//simPrinter.println("THOWING FOR " + directive.dogToPlayWith.getOwner().getNameAsString() + "'s " + directive.dogToPlayWith.getBreed());
 
 			//setThrowLocation(directive, myOwner, otherOwners);
 
 
 			double randomAngle = Math.toRadians(random.nextDouble() * 360); 
 		
-			double ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(1.7977);
-			double ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(1.7977);
+			double ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(1.6977);
+			double ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(1.6977);
 
 			if (cloneOrder == 2) {
-				ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(4.93933);
-				ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(4.93933);
+				ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(4.83933);
+				ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(4.83933);
 			}
 
 			if(ballRow < 0.0)
@@ -229,14 +228,13 @@ public class Player extends dogs.sim.Player {
 
 	private Dog getLongestWaitingDog(List<Dog> allDogs) {
 		Double waitingTime = 30.0;
-		Dog longestWaitingDog = null; 
+		Dog longestWaitingDog = null;
 		for (Dog dog : allDogs){
-			if (dog.getWaitingTimeRemaining() < waitingTime){
+			if (dog.getWaitingTimeRemaining() <= waitingTime){
 				longestWaitingDog = dog;
 				waitingTime = dog.getWaitingTimeRemaining();
 			}
 		}
-		simPrinter.println("DOG WAITING: " + longestWaitingDog.getExerciseTimeRemaining());
 		return longestWaitingDog;
 	}
 
@@ -292,11 +290,7 @@ public class Player extends dogs.sim.Player {
 
 		for(Owner otherOwner : otherOwners)
 			for(Dog dog : otherOwner.getDogs()){
-				simPrinter.println("OTHER OWNER: " + otherOwner.getNameAsString());
-				simPrinter.println("DOG: " + dog.getBreed());
-				
 				if(dog.isWaitingForOwner(myOwner)){
-					simPrinter.println("WAITING ON: " + dog.getOwnerWaitingFor().getNameAsString());
 					waitingDogs.add(dog);
 				}
 			}
