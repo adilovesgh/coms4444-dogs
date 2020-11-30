@@ -131,19 +131,33 @@ public class Dog implements Serializable {
 	}
 
 	public boolean isWaitingForItsOwner() {
-		return owner.equals(personWaitingFor);
+		return owner.equals(personWaitingFor) || 
+				(personWaitingFor != null && 
+				 owner.getNameAsString().equals(personWaitingFor.getNameAsString())
+				);
 	}
 
 	public boolean isWaitingForOwner(Owner owner) {
-		return owner.equals(personWaitingFor);
+		return owner.equals(personWaitingFor) || 
+				(owner != null && 
+				 personWaitingFor != null && 
+				 owner.getNameAsString().equals(personWaitingFor.getNameAsString())
+				);
 	}
 	
 	public boolean isHeadingForItsOwner() {
-		return owner.equals(personHeadingFor);
+		return owner.equals(personHeadingFor) || 
+				(personHeadingFor != null && 
+				 owner.getNameAsString().equals(personHeadingFor.getNameAsString())
+				);
 	}
 
 	public boolean isHeadingForOwner(Owner owner) {
-		return owner.equals(personHeadingFor);
+		return owner.equals(personHeadingFor) || 
+				(owner != null && 
+				 personHeadingFor != null && 
+				 owner.getNameAsString().equals(personHeadingFor.getNameAsString())
+				);
 	}
 
 	public boolean isRunning() {

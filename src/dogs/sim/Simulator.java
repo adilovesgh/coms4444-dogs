@@ -325,7 +325,7 @@ public class Simulator {
 							clonedOtherOwner.setAllExerciseCompletionTime(Double.MAX_VALUE);
 							clonedOtherOwner.setAllExerciseCompleted(false);
 						}
-						
+												
 						Directive directive = playerWrapper.chooseDirective(round, clonedOwner, clonedOtherOwners);
 						Instruction instruction = directive.instruction;
 						if(instruction != null) {
@@ -334,7 +334,7 @@ public class Simulator {
 						}
 						if(instruction.equals(Instruction.CALL_SIGNAL)) {
 							String signal = directive.signalWord;
-							if(Dictionary.isInDictionary(signal)) {
+							if(Dictionary.isInDictionary(signal.toLowerCase())) {
 								owner.setCurrentSignal(signal);
 								Log.writeToVerboseLogFile("Owner " + owner.getNameAsString() + "'s signal word: \"" + signal + "\"");								
 							}
