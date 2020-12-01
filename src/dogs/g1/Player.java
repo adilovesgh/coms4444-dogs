@@ -86,7 +86,7 @@ public class Player extends dogs.sim.Player {
         //         simPrinter.println(person.getNameAsString() + " is a random player");
 
         //     findRandos(myOwner, otherOwners);
-        //     updateLocations();
+        //     updateLocations(teamOwners.get(1).size());
         //     this.path = shortestPath(ownerLocations.get(myOwner));
         //     simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
         // }
