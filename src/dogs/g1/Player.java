@@ -64,7 +64,7 @@ public class Player extends dogs.sim.Player {
         }
         else if (round == 6) { // fills ups randos to spot the random player, make starting config with nonrandom players
             findRandos(myOwner, otherOwners);
-            updateLocations();
+            updateLocations(teamOwners.get(1).size());
             // TODO: this breaks with random players!! make sure the circuits and shapes are preserved
             this.path = shortestPath(ownerLocations.get(myOwner));
             simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
@@ -110,10 +110,18 @@ public class Player extends dogs.sim.Player {
             return directive;
         }
 
-        // OPTION: change how far each node is from the other one in the isosceles triangle
-        // float nodeSeparation = 0.0f;
-        float nodeSeparation = 2.0f;
-        return throwToNext(myOwner, otherOwners, nodeSeparation);
+        // if not too far from all other owners, start throwing
+        if (!checkTooFarFromOtherOwners(myOwner, otherOwners)) {
+            // OPTION: change how far each node is from the other one in the isosceles triangle
+            // float nodeSeparation = 0.0f;
+            float nodeSeparation = 2.0f;
+            return throwToNext(myOwner, otherOwners, nodeSeparation);
+        }
+        else {  // if too far, move closer to the closest owner
+            directive.instruction = Instruction.MOVE;
+            directive.parkLocation = moveCloserToOtherOwners(myOwner, otherOwners);
+            return directive;
+        }
     }
 
     /** 
@@ -266,8 +274,7 @@ public class Player extends dogs.sim.Player {
     /**
      * Get the location where the current player will move to in the circle
      */
-    private void updateLocations() {
-        int numOwners = nonRandos.size();
+    private void updateLocations(int numOwners) {
         double dist = 40.0;     // use 40 for now
         double fromEdges = 10.0; // how far from the edges of the park 
         // OPTION: change dist and fromEdges to change the shape
@@ -290,7 +297,10 @@ public class Player extends dogs.sim.Player {
 
     private void findRandos(Owner myOwner, List<Owner> otherOwners) {
         nonRandos.add(myOwner);
-        List<String> teams = new ArrayList<String>(Arrays.asList("papaya", "two", "three", "four", "five"));
+        List<String> teams = new ArrayList<String>(Arrays.asList("papaya", "two", "three", "zythum", "Zyzzogeton"));
+        List<String> temp = new ArrayList<String>();
+        temp.add(myOwner.getNameAsString());
+        teamOwners.put(1, temp);
 
         for (Owner person : otherOwners) {
             String signal = person.getCurrentSignal();
@@ -370,6 +380,52 @@ public class Player extends dogs.sim.Player {
             }
         }
         return shape;
+    }
+
+    /**
+     * Check if owner is too far from other owners
+     *
+     * @param myOwner      my owner
+     * @param otherOwners  list of other owners
+     * @return             true if too far from all owners, false if not
+     *
+     */
+    private boolean checkTooFarFromOtherOwners(Owner myOwner, List<Owner> otherOwners) {
+        if (otherOwners.size() == 0)
+            return false;
+        ParkLocation myLoc = myOwner.getLocation();
+        for (Owner owner : otherOwners) {
+            ParkLocation otherLoc = owner.getLocation();
+            if (distanceBetweenTwoPoints(myLoc, otherLoc) <= 40)
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Move closer to the closest owner
+     *
+     * @param myOwner      my owner
+     * @param otherOwners  list of other owners
+     * @return             true if too far from all owners, false if not
+     *
+     */
+    private ParkLocation moveCloserToOtherOwners(Owner myOwner, List<Owner> otherOwners) {
+        double dist = Double.MAX_VALUE;
+        ParkLocation myLoc = myOwner.getLocation();
+        ParkLocation target = new ParkLocation();
+        for (Owner owner : otherOwners) {
+            ParkLocation otherLoc = owner.getLocation();
+            double newDist = distanceBetweenTwoPoints(myLoc, otherLoc);
+            if (newDist < dist) {
+                dist = newDist;
+                target = otherLoc;
+            }
+        }
+        double magnitude = distanceBetweenTwoPoints(myLoc, target);
+        double x = ((target.getRow()-myLoc.getRow())*5/magnitude)+myLoc.getRow();
+        double y = ((target.getColumn()-myLoc.getColumn())*5/magnitude)+myLoc.getColumn();
+        return new ParkLocation(x,y);
     }
 
     /**
