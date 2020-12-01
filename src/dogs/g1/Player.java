@@ -115,7 +115,7 @@ public class Player extends dogs.sim.Player {
             // OPTION: change how far each node is from the other one in the isosceles triangle
             // float nodeSeparation = 0.0f;
             float nodeSeparation = 2.0f;
-            if (otherOwners.size()==0 && teamOwners.get(1).size()==1) {
+            if (otherOwners.size()>0 && teamOwners.get(1).size()==1) {
                 List<Owner> closestOwners = new ArrayList<>();
                 closestOwners.add(getClosestOwner(myOwner, otherOwners));
                 return throwToNext(myOwner, closestOwners, nodeSeparation);
@@ -168,14 +168,19 @@ public class Player extends dogs.sim.Player {
         float offset = N + N*nodeSeparation; // distance between node and next Owner (top of isosceles)
         
         boolean foundTarget = false; 
-        if (nonRandos.size() >= 2) { // we can throw to someone else that's smart!  
+        // if only one team 1 player and multiple other team players
+        if (otherOwners.size()>0 && teamOwners.get(1).size()==1) {
+            B = otherOwners.get(0);
+            if (distanceBetweenTwoPoints(A.getLocation(), B.getLocation()) <= 40)
+                foundTarget = true;
+        }
+        else if (nonRandos.size() >= 2) { // we can throw to someone else that's smart!  
             // pick the next person in the cycle, ensuring that they fall within 40 meters
 
             // for (Owner o : nonRandos) 
             //     simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + o.getLocation());
 
             B = ownerCycle.get((findOwnerIndex(ownerCycle,A) + 1) % ownerCycle.size());
-            
             if (distanceBetweenTwoPoints(A.getLocation(), B.getLocation()) > 40) {
                 for (Owner o : nonRandos) {
                     if (o == A) continue; 
@@ -185,9 +190,6 @@ public class Player extends dogs.sim.Player {
                         break;
                     }
                 }
-                System.out.println("~~~~~~~~~~~~~~~~~~~~~~~");
-                System.out.println(B);
-                System.out.println("~~~~~~~~~~~~~~~~~~~~~~~");
             }
             else 
                 foundTarget = true;
