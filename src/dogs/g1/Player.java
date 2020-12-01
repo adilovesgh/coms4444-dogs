@@ -115,7 +115,14 @@ public class Player extends dogs.sim.Player {
             // OPTION: change how far each node is from the other one in the isosceles triangle
             // float nodeSeparation = 0.0f;
             float nodeSeparation = 2.0f;
-            return throwToNext(myOwner, otherOwners, nodeSeparation);
+            if (otherOwners.size()==0 && teamOwners.get(1).size()==1) {
+                List<Owner> closestOwners = new ArrayList<>();
+                closestOwners.add(getClosestOwner(myOwner, otherOwners));
+                return throwToNext(myOwner, closestOwners, nodeSeparation);
+            }
+            else {
+                return throwToNext(myOwner, otherOwners, nodeSeparation);
+            }
         }
         else {  // if too far, move closer to the closest owner
             directive.instruction = Instruction.MOVE;
@@ -178,6 +185,9 @@ public class Player extends dogs.sim.Player {
                         break;
                     }
                 }
+                System.out.println("~~~~~~~~~~~~~~~~~~~~~~~");
+                System.out.println(B);
+                System.out.println("~~~~~~~~~~~~~~~~~~~~~~~");
             }
             else 
                 foundTarget = true;
@@ -403,6 +413,29 @@ public class Player extends dogs.sim.Player {
     }
 
     /**
+     * Get other owner closest to this owner
+     *
+     * @param myOwner      my owner
+     * @param otherOwners  list of other owners
+     * @return             true if too far from all owners, false if not
+     *
+     */
+    private Owner getClosestOwner(Owner myOwner, List<Owner> otherOwners) {
+        double dist = Double.MAX_VALUE;
+        ParkLocation myLoc = myOwner.getLocation();
+        Owner closestOwner = new Owner();
+        for (Owner owner : otherOwners) {
+            ParkLocation otherLoc = owner.getLocation();
+            double newDist = distanceBetweenTwoPoints(myLoc, otherLoc);
+            if (newDist < dist) {
+                dist = newDist;
+                closestOwner = owner;
+            }
+        }
+        return closestOwner;
+    }
+
+    /**
      * Move closer to the closest owner
      *
      * @param myOwner      my owner
@@ -413,15 +446,8 @@ public class Player extends dogs.sim.Player {
     private ParkLocation moveCloserToOtherOwners(Owner myOwner, List<Owner> otherOwners) {
         double dist = Double.MAX_VALUE;
         ParkLocation myLoc = myOwner.getLocation();
-        ParkLocation target = new ParkLocation();
-        for (Owner owner : otherOwners) {
-            ParkLocation otherLoc = owner.getLocation();
-            double newDist = distanceBetweenTwoPoints(myLoc, otherLoc);
-            if (newDist < dist) {
-                dist = newDist;
-                target = otherLoc;
-            }
-        }
+        Owner closestOwner = getClosestOwner(myOwner, otherOwners);
+        ParkLocation target = closestOwner.getLocation();
         double magnitude = distanceBetweenTwoPoints(myLoc, target);
         double x = ((target.getRow()-myLoc.getRow())*5/magnitude)+myLoc.getRow();
         double y = ((target.getColumn()-myLoc.getColumn())*5/magnitude)+myLoc.getColumn();
