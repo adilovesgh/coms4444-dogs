@@ -72,7 +72,7 @@ public class Player extends dogs.sim.Player {
         List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
 
         Comparator<Dog> bySpeed = (Dog d1, Dog d2) -> Double.compare(d1.getRunningSpeed(), d2.getRunningSpeed());
-        Collections.sort(waitingDogs, bySpeed.reversed());
+        Collections.sort(waitingDogs, bySpeed);
 
         if(waitingDogs.size() > 0) {
             int i = 0;
