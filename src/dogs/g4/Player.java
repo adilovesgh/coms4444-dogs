@@ -92,11 +92,11 @@ public class Player extends dogs.sim.Player {
 
         updateDistances(otherOwners, myOwner);
 
-//        simPrinter.println("----------------------------");
-//        for (Owner owner : this.allLocationMap.keySet()) {
-//            simPrinter.println(allLocationMap.get(owner).dist);
-//        }
-//        simPrinter.println("----------------------------");
+        simPrinter.println("----------------------------");
+        for (Owner owner : this.allLocationMap.keySet()) {
+            simPrinter.println(allLocationMap.get(owner).dist);
+        }
+        simPrinter.println("----------------------------");
 
         return myDirective;
     }
