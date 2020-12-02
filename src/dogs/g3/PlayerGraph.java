@@ -13,7 +13,7 @@ import dogs.sim.SimPrinter;
 public class PlayerGraph {
 
     public enum GraphType{
-        POLYGON,SPOKE,NETWORK
+        POLYGON,GRID,NETWORK
     }
 
     HashMap<OwnerName, PlayerNode> owners;
@@ -37,7 +37,7 @@ public class PlayerGraph {
             dogConcentration += o.getDogs().size();
         }
         dogConcentration /= (double) allOwners.size();
-        graphType = dogConcentration>15.0 && allOwners.size()>9 ? GraphType.SPOKE : GraphType.POLYGON;
+        graphType = allOwners.size()>10 ? GraphType.GRID : GraphType.POLYGON;
         //System.out.println(graphType);
         return graphType;
     }

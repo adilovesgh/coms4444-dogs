@@ -52,7 +52,7 @@ public class Player extends dogs.sim.Player {
 	private HashMap<String, ParkLocation> mapOwnerToParkLocationCircle(List<Owner> owners, ParkLocation center,
 			int radius) {
 		HashMap<String, ParkLocation> ownerToLocation = new HashMap<String, ParkLocation>();
-		if (this.graph.graphType == GraphType.SPOKE) {
+		if (this.graph.graphType == GraphType.GRID) {
 
 		} else {
 			for (int i = 0; i < owners.size(); i++) {
