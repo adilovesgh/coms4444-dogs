@@ -26,10 +26,6 @@ public class Player extends dogs.sim.Player {
 	private final Double POODLE_THROW_DISTANCE 	= THROW_DISTANCE;// - DOG_SPACING;
 	private final Double SPANIEL_THROW_DISTANCE 	= THROW_DISTANCE;// - DOG_SPACING * 2; 
 	private final Double TERRIER_THROW_DISTANCE 	= THROW_DISTANCE;// - DOG_SPACING * 3;
-	private final Double C1_OFFSET			= Math.PI /2;
-	private final Double C2_OFFSET			= 3 * Math.PI / 2;
-	private final Double C3_OFFSET			= Math.PI;
-	private final Double C4_OFFSET			= 3 * Math.PI / 2;
 	private final Double CLONE_DISTANCE 		= Math.sqrt(Math.pow(THROW_DISTANCE, 2) - Math.pow(DOG_SPACING * 4, 2));
 	private final Double LABRADOR_OFFSET_ANGLE	= Math.atan(DOG_SPACING * 4/CLONE_DISTANCE);
 	private final Double POODLE_OFFSET_ANGLE 	= Math.atan(DOG_SPACING * 3/CLONE_DISTANCE);
@@ -153,7 +149,7 @@ public class Player extends dogs.sim.Player {
 		else if (throwing){
 			if(waitingDogs.size() > 0){
 				// CHANGE PARAMETER
-				setThrowLocation(directive, waitingDogs, myOwner, otherOwners.get(1));				
+				setThrowLocation(directive, waitingDogs, myOwner, pickReceivingClone(otherOwners));				
 			}
 		}
 
@@ -259,6 +255,18 @@ public class Player extends dogs.sim.Player {
 				return true;
 		}
 		return false;
+	}
+
+	private Owner pickReceivingClone(List<Owner> otherOwners){
+		int cloneIndex = cloneOrder;
+		if (clonesPresent.size() == cloneOrder)
+			cloneIndex = 0;
+
+		for (Owner otherOwner : otherOwners){
+			if (otherOwner.getNameAsString().equals(clonesPresent.get(cloneIndex)))
+				return otherOwner;
+		}
+		return null;
 	}
 
 	private void setThrowLocation(Directive directive, List<Dog> waitingDogs, Owner myOwner, Owner targetOwner){
