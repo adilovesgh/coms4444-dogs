@@ -42,6 +42,7 @@ public class Player extends dogs.sim.Player {
 	private List<String> clonesPresent = new ArrayList<>();
 	private List<String> throwingPartners = new ArrayList<>();
 	private List<String> currentPartners = new ArrayList<>();
+	
 	private Map<String, String> teamsPresent = new HashMap<>();
 	private Map<String, List<String>> signalLog = new HashMap<>();
 	private Map<Integer, HashMap<String, String>> conversationHistory = new HashMap<>();
@@ -102,18 +103,13 @@ public class Player extends dogs.sim.Player {
 				simPrinter.println(myOwner.getNameAsString() + "'s CURRENT PARTNERS JA: " + currentPartners);
 				directive.instruction = Instruction.CALL_SIGNAL;
 				directive.signalWord = IN_POSITION_SIGNAL;
-				justArrivedWhatNow(State.SELF_THROWING);
+				checkClonePartnersStatus(State.SELF_THROWING);
 				break;
 
 			case PAIR_THROWING:
 				simPrinter.println(myOwner.getNameAsString() + "'s THROWING PARTNERS PT: " + throwingPartners);
 				simPrinter.println(myOwner.getNameAsString() + "'s CURRENT PARTNERS PT: " + currentPartners);
-				justArrivedWhatNow(State.PAIR_THROWING);
-				if(waitingDogs.size() > 0)
-					setThrowLocation(directive, waitingDogs, myOwner, pickReceivingClone(otherOwners));
-				break;
-
-			case TRIO_THROWING:
+				checkClonePartnersStatus(State.PAIR_THROWING);
 				if(waitingDogs.size() > 0)
 					setThrowLocation(directive, waitingDogs, myOwner, pickReceivingClone(otherOwners));
 				break;
@@ -121,7 +117,7 @@ public class Player extends dogs.sim.Player {
 			case SELF_THROWING:
 				simPrinter.println(myOwner.getNameAsString() + "'s THROWING PARTNERS ST: " + throwingPartners);
 				simPrinter.println(myOwner.getNameAsString() + "'s CURRENT PARTNERS ST: " + currentPartners);
-				justArrivedWhatNow(State.SELF_THROWING);
+				checkClonePartnersStatus(State.SELF_THROWING);
 				if(waitingDogs.size() > 0)
 					throwToSelf(directive, myOwner, waitingDogs);
 
@@ -309,7 +305,7 @@ public class Player extends dogs.sim.Player {
 		return longestWaitingDog;
 	}
 
-	private void justArrivedWhatNow(State currentState){
+	private void checkClonePartnersStatus(State currentState){
 
 		for (String clone : signalLog.get(IN_POSITION_SIGNAL)){
 			if (throwingPartners.contains(clone)){
@@ -515,8 +511,6 @@ public class Player extends dogs.sim.Player {
 		else 
 			return false;
 	}
-
-	//private boolean allDogsWaiting(List<Dog>))
 
 	private boolean allDogsDone(List<Dog> allDogs){
 		for (Dog dog : allDogs){
