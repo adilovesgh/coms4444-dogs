@@ -13,9 +13,32 @@ import dogs.sim.SimPrinter;
 
 public class Player extends dogs.sim.Player {
 
+	private final String OUR_TEAM_NAME = "Zyzzogeton";
+
+	private final String[] OTHER_TEAM_NAMES = {"papaya","two","three","zythum","Zyzzogeton"};
+	
+	private final Double DOG_SPACING 		= 2.25;
+	private final Double THROW_DISTANCE 		= 40.0;
+	private final Double C1_OFFSET			= Math.PI / 2;
+	private final Double C2_OFFSET			= 3 * Math.PI / 2;
+	private final Double CLONE_DISTANCE 		= Math.sqrt(Math.pow(THROW_DISTANCE, 2) - Math.pow(DOG_SPACING * 4, 2));
+	private final Double LABRADOR_OFFSET_ANGLE	= Math.atan(DOG_SPACING * 4/CLONE_DISTANCE);
+	private final Double POODLE_OFFSET_ANGLE 	= Math.atan(DOG_SPACING * 3/CLONE_DISTANCE);
+	private final Double SPANIEL_OFFSET_ANGLE 	= Math.atan(DOG_SPACING * 2/CLONE_DISTANCE);
+	private final Double TERRIER_OFFSET_ANGLE 	= Math.atan(DOG_SPACING * 1/CLONE_DISTANCE);
+
+
+
+	private List<String> clonesPresent = new ArrayList<>();
+	private Map<String, String> teamsPresent = new HashMap<>();
+
+	private boolean moving = true;
+	private Integer cloneOrder = 0;
 	private double listeningProbability = 0.2;
 	private Double targetColumn = 0.0;
 	private Double targetRow = 0.0;
+	private Map<Integer, HashMap<String, String>> conversationHistory = new HashMap<>();
+
 
 	/**
 	* Player constructor
@@ -62,40 +85,125 @@ public class Player extends dogs.sim.Player {
 		Directive directive = new Directive();
 		List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
 
-		//first round: say group number, calc location
 		if(round == 1) {
-			directive.signalWord = "five";
+			directive.signalWord = OUR_TEAM_NAME;
+			directive.instruction = Instruction.CALL_SIGNAL;
 
-		//////todo 1
+			/*
 			List<Double> initialLocation = findLocation();
 			targetRow = initialLocation.get(0);
 			targetColumn = initialLocation.get(1);
+			*/
+
+			targetRow = 75.0;
+			targetColumn = 75.0;
 
 			return directive;
 		}
 
-		if(myOwner.getLocation().getColumn() < targetColumn || myOwner.getLocation().getRow() < targetRow) {
-			simPrinter.println(myOwner.getLocation().toString());
-			double rowDelta = myOwner.getLocation().getRow() - targetRow;
-			double colDelta = myOwner.getLocation().getColumn() - targetColumn;
+		if(round == 6){
+			for (Owner owner : otherOwners){
+				if (Arrays.asList(OTHER_TEAM_NAMES).contains(owner.getCurrentSignal()))
+					teamsPresent.put(owner.getNameAsString(),owner.getCurrentSignal());
+				if (owner.getCurrentSignal().equals(OUR_TEAM_NAME))
+					clonesPresent.add(owner.getNameAsString());
+			}
+			
 
-			double angle = Math.atan(rowDelta/colDelta);
+			if (clonesPresent.size() > 0)
+				setCloneOrder(myOwner);
 
-			double scaledRow = 4.99*Math.sin(angle);
-			double scaledCol = 4.99*Math.cos(angle);
+			if (cloneOrder > 1)
+				targetRow += CLONE_DISTANCE;
 
-			directive.instruction = Instruction.MOVE;
-			directive.parkLocation = new ParkLocation(myOwner.getLocation().getRow() + scaledRow, myOwner.getLocation().getColumn() + scaledCol);
-			return directive;
+			simPrinter.println(myOwner.getNameAsString() + "'s list: " + clonesPresent);
+			simPrinter.println(myOwner.getNameAsString() + "'s order: " + cloneOrder);
 		}
 
+
+		if(moving){
+
+			if(myOwner.getLocation().getColumn() < targetColumn || myOwner.getLocation().getRow() < targetRow) {
+				//simPrinter.println(myOwner.getLocation().toString());
+				double rowDelta = myOwner.getLocation().getRow() - targetRow;
+				double colDelta = myOwner.getLocation().getColumn() - targetColumn;
+				double angle = Math.atan(rowDelta/colDelta);
+				double scaledRow = 4.99 * Math.sin(angle);
+				double scaledCol = 4.99 * Math.cos(angle);
+
+				directive.parkLocation.setRow(myOwner.getLocation().getRow() + scaledRow);
+				directive.parkLocation.setColumn(myOwner.getLocation().getColumn() + scaledCol);
+				directive.instruction = Instruction.MOVE;
+
+				return directive;
+
+			} else {
+
+				directive.parkLocation.setRow(targetRow);
+				directive.parkLocation.setColumn(targetColumn);
+				directive.instruction = Instruction.MOVE;
+				moving = false;
+
+				return directive;
+			}
+		}
+		simPrinter.println("WAITING ON " + myOwner.getNameAsString() + ": " + waitingDogs);
 		if(waitingDogs.size() > 0){ 
 			directive.instruction = Instruction.THROW_BALL;
-			directive.dogToPlayWith = getLeastTiredDog(waitingDogs);
+			directive.dogToPlayWith = chooseDog(waitingDogs);
+			//simPrinter.println("THOWING FOR " + directive.dogToPlayWith.getOwner().getNameAsString() + "'s " + directive.dogToPlayWith.getBreed());
+
+			//setThrowLocation(directive, myOwner, otherOwners);
+
 
 			double randomAngle = Math.toRadians(random.nextDouble() * 360);
-			double ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(randomAngle);
-			double ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(randomAngle);
+			double ballRow = 0.0;
+			double ballColumn = 0.0;
+			
+			switch (directive.dogToPlayWith.getBreed()){
+				case LABRADOR:
+					ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(C1_OFFSET + LABRADOR_OFFSET_ANGLE);
+					ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(C1_OFFSET + LABRADOR_OFFSET_ANGLE);
+
+					if (cloneOrder == 2) {
+						ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(C2_OFFSET + LABRADOR_OFFSET_ANGLE);
+						ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(C2_OFFSET + LABRADOR_OFFSET_ANGLE);
+					}
+					break;
+				case POODLE:
+					ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(C1_OFFSET + POODLE_OFFSET_ANGLE);
+					ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(C1_OFFSET + POODLE_OFFSET_ANGLE);
+
+					if (cloneOrder == 2) {
+						ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(C2_OFFSET + POODLE_OFFSET_ANGLE);
+						ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(C2_OFFSET + POODLE_OFFSET_ANGLE);
+					}
+					break;
+				case SPANIEL:
+					ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(C1_OFFSET + SPANIEL_OFFSET_ANGLE);
+					ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(C1_OFFSET + SPANIEL_OFFSET_ANGLE);
+
+					if (cloneOrder == 2) {
+						ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(C2_OFFSET + SPANIEL_OFFSET_ANGLE);
+						ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(C2_OFFSET + SPANIEL_OFFSET_ANGLE);
+					}
+					break;
+				case TERRIER:
+					ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(C1_OFFSET + TERRIER_OFFSET_ANGLE);
+					ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(C1_OFFSET + TERRIER_OFFSET_ANGLE);
+
+					if (cloneOrder == 2) {
+						ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(C2_OFFSET + TERRIER_OFFSET_ANGLE);
+						ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(C2_OFFSET + TERRIER_OFFSET_ANGLE);
+					}
+					break;
+				default:
+					break;
+
+
+			}
+
+			
 
 			if(ballRow < 0.0)
 				ballRow = 0.0;
@@ -103,12 +211,16 @@ public class Player extends dogs.sim.Player {
 				ballRow = ParkLocation.PARK_SIZE - 1;
 			if(ballColumn < 0.0)
 				ballColumn = 0.0;
+
+
+
 			if(ballColumn > ParkLocation.PARK_SIZE - 1)
 				ballColumn = ParkLocation.PARK_SIZE - 1;
 
 			directive.parkLocation = new ParkLocation(ballRow, ballColumn);
 		}
 
+		saveConversation(round, otherOwners);
 		return directive;
 	}
 
@@ -151,17 +263,69 @@ public class Player extends dogs.sim.Player {
 		return coordinates;
 	}
 
+	private Dog chooseDog(List<Dog> allDogs){
+		
+		Double timeLeft = 0.0;
+		Double waitingTime = 30.0;
+		
+		Dog leastTiredDog = null;
+		Dog longestWaitingDog = null; 
+		simPrinter.println("1");
+		for (Dog dog : allDogs){
+			simPrinter.println("2");
+			if (dog.isWaitingForItsOwner()){
+				simPrinter.println("2a");
+				if (dog.getExerciseTimeRemaining() >= timeLeft){
+					simPrinter.println("3");
+					leastTiredDog = dog;
+					simPrinter.println("4");
+					timeLeft = dog.getExerciseTimeRemaining();
+					simPrinter.println("5");
+				}
+			}
+			else
+				if (dog.getWaitingTimeRemaining() <= waitingTime){
+					simPrinter.println("6");
+					longestWaitingDog = dog;
+					simPrinter.println("7");
+					waitingTime = dog.getWaitingTimeRemaining();
+					simPrinter.println("8");
+				}
+		}
+		if (leastTiredDog != null)
+			return leastTiredDog;
+		
+		return longestWaitingDog;
+	}
+
 	private Dog getLeastTiredDog(List<Dog> allDogs) {
 		Double timeLeft = 0.0;
-		Dog mostTiredDog = null; 
+		Dog leastTiredDog = null; 
 		for (Dog dog : allDogs){
 			if (dog.getExerciseTimeRemaining() > timeLeft){
-				mostTiredDog = dog;
+				leastTiredDog = dog;
 				timeLeft = dog.getExerciseTimeRemaining();
 			}
 		}
-		simPrinter.println("DOG NEEDS: " + mostTiredDog.getExerciseTimeRemaining());
-		return mostTiredDog;
+		simPrinter.println("DOG NEEDS: " + leastTiredDog.getExerciseTimeRemaining());
+		return leastTiredDog;
+	}
+
+	private Dog getLongestWaitingDog(List<Dog> allDogs) {
+		Double waitingTime = 30.0;
+		Dog longestWaitingDog = null;
+		for (Dog dog : allDogs){
+			if (dog.getWaitingTimeRemaining() <= waitingTime){
+				longestWaitingDog = dog;
+				waitingTime = dog.getWaitingTimeRemaining();
+			}
+		}
+		return longestWaitingDog;
+	}
+
+	private ParkLocation setThrowLocation(Directive directive, Owner myOwner, List<Owner> otherOwners){
+		directive.dogToPlayWith.getOwner().getLocation();
+		return null;
 	}
 
 	private boolean dogIsDone(Dog dog){
@@ -186,8 +350,21 @@ public class Player extends dogs.sim.Player {
 		for(Owner otherOwner : otherOwners)
 			if(!otherOwner.getCurrentSignal().equals("_"))
 				otherOwnersSignals.add(otherOwner.getCurrentSignal());
-			return otherOwnersSignals;
-		}
+		return otherOwnersSignals;
+	}
+
+	private void saveConversation(Integer round, List<Owner> otherOwners){
+		conversationHistory.put(round, new HashMap<>());
+		for(Owner owner : otherOwners)
+			if (teamsPresent.containsKey(owner.getNameAsString()))
+				conversationHistory.get(round).put(owner.getNameAsString(), owner.getCurrentSignal());
+	}
+
+	private void setCloneOrder(Owner myOwner){
+        	clonesPresent.add(myOwner.getNameAsString());
+        	Collections.sort(clonesPresent);
+        	cloneOrder = clonesPresent.indexOf(myOwner.getNameAsString()) + 1;
+	}
 
 	private List<Dog> getWaitingDogs(Owner myOwner, List<Owner> otherOwners) {
 		List<Dog> waitingDogs = new ArrayList<>();
@@ -197,9 +374,11 @@ public class Player extends dogs.sim.Player {
 				waitingDogs.add(dog);
 
 		for(Owner otherOwner : otherOwners)
-			for(Dog dog : otherOwner.getDogs()) 
-				if(dog.isWaitingForOwner(myOwner))
+			for(Dog dog : otherOwner.getDogs()){
+				if(dog.isWaitingForOwner(myOwner)){
 					waitingDogs.add(dog);
+				}
+			}
 	
 		return waitingDogs;
 	}
