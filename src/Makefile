@@ -9,4 +9,3 @@ compile:
 
 clean:
 	rm dogs/*/*.class
-  
