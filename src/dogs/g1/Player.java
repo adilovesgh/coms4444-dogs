@@ -124,7 +124,7 @@ public class Player extends dogs.sim.Player {
             if (!checkTooFarFromOtherOwners(myOwner, collabOwners)) {
                 List<Owner> closestOwners = new ArrayList<>();
                 closestOwners.add(getClosestOwner(myOwner, collabOwners));
-                return throwToNext(myOwner, closestOwners, nodeSeparation);
+                if (round % 90 == 1) return throwToNext(myOwner, closestOwners, nodeSeparation);
             }
             else {
                 directive.instruction = Instruction.MOVE;
@@ -147,6 +147,8 @@ public class Player extends dogs.sim.Player {
             directive.parkLocation = moveCloserToOtherOwners(myOwner, otherOwners);
             return directive;
         }
+        directive.instruction = Instruction.NOTHING;
+        return directive;
     }
 
     /** 
