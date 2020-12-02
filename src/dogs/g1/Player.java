@@ -58,13 +58,14 @@ public class Player extends dogs.sim.Player {
         Directive directive = new Directive();
         if (round == 1) { // gets starting location, calls out name to find random players
             directive.instruction = Instruction.CALL_SIGNAL;
-            directive.signalWord = "one";
+            directive.signalWord = "papaya";
             simPrinter.println(myOwner.getNameAsString() + " called out " + directive.signalWord + " in round " + round);
             return directive;
         }
         else if (round == 6) { // fills ups randos to spot the random player, make starting config with nonrandom players
             findRandos(myOwner, otherOwners);
-            updateLocations();
+            updateLocations(teamOwners.get(1).size());
+            // TODO: this breaks with random players!! make sure the circuits and shapes are preserved
             this.path = shortestPath(ownerLocations.get(myOwner));
             simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
         }
@@ -85,12 +86,12 @@ public class Player extends dogs.sim.Player {
         //         simPrinter.println(person.getNameAsString() + " is a random player");
 
         //     findRandos(myOwner, otherOwners);
-        //     updateLocations();
+        //     updateLocations(teamOwners.get(1).size());
         //     this.path = shortestPath(ownerLocations.get(myOwner));
         //     simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
         // }
 
-        // TODO: if not at intended location
+        // if not at intended location
         if (steppingStone != path.size()) {
             directive.instruction = Instruction.MOVE;
             directive.parkLocation = this.path.get(steppingStone++);
@@ -112,7 +113,42 @@ public class Player extends dogs.sim.Player {
         // OPTION: change how far each node is from the other one in the isosceles triangle
         // float nodeSeparation = 0.0f;
         float nodeSeparation = 2.0f;
-        return throwToNext(myOwner, otherOwners, nodeSeparation);
+        // special case collaboration with team 3 and team 4
+        if (teamOwners.get(1).size()==1 && (teamOwners.get(3).size()>=2 || teamOwners.get(4).size()>=2)) {
+            List<Owner> collabOwners = new ArrayList<>();
+            for (Owner owner : otherOwners) {
+                String name = owner.getNameAsString();
+                if (teamOwners.get(3).contains(name) || teamOwners.get(4).contains(name))
+                    collabOwners.add(owner);
+            }
+            if (!checkTooFarFromOtherOwners(myOwner, collabOwners)) {
+                List<Owner> closestOwners = new ArrayList<>();
+                closestOwners.add(getClosestOwner(myOwner, collabOwners));
+                if (round % 90 == 1) return throwToNext(myOwner, closestOwners, nodeSeparation);
+            }
+            else {
+                directive.instruction = Instruction.MOVE;
+                directive.parkLocation = moveCloserToOtherOwners(myOwner, collabOwners);
+                return directive;
+            }
+        }
+        else if (!checkTooFarFromOtherOwners(myOwner, otherOwners)) {  // if not too far from all other owners, start throwing
+            if (otherOwners.size()>0 && teamOwners.get(1).size()==1) {
+                List<Owner> closestOwners = new ArrayList<>();
+                closestOwners.add(getClosestOwner(myOwner, otherOwners));
+                return throwToNext(myOwner, closestOwners, nodeSeparation);
+            }
+            else {
+                return throwToNext(myOwner, otherOwners, nodeSeparation);
+            }
+        }
+        else {  // if too far, move closer to the closest owner
+            directive.instruction = Instruction.MOVE;
+            directive.parkLocation = moveCloserToOtherOwners(myOwner, otherOwners);
+            return directive;
+        }
+        directive.instruction = Instruction.NOTHING;
+        return directive;
     }
 
     /** 
@@ -122,21 +158,19 @@ public class Player extends dogs.sim.Player {
      *                          Min: 0      Max: 2 
      */
     private Directive throwToNext(Owner A, List<Owner> otherOwners, float nodeSeparation) {
-        // TODO: keep track of throws so that we don't keep throwing to the same dog 
+        // TODO: maybe throw in another direction to avoid overwhelming someone? 
         Owner B = new Owner(); // the next owner to trow to, determined later by who is available 
 
         Directive ret = new Directive();
         ret.instruction = Instruction.THROW_BALL;
 
-        // TODO: Sharon --> Currently prioritizes dogs based on how much time they have left to wait 
-        //                  Maybe dont pick dogs that have already reached their exercise goal 
-        //                  Prioritizze random dogs?
-        // TODO: Joseph --> pick which Node to throw to (0 = right at next owner, 3 = farthest possible from owner)
+        // TODO: Prioritize random dogs?
+        // pick which Node to throw to (0 = right at next owner, 3 = farthest possible from owner)
         List<Dog> waitingDogs = myDogsWaiting(A);
         
-        if (waitingDogs.size() == 0) { // TODO: call out something to say you have no dogs? 
+        if (waitingDogs.size() == 0) // TODO: call out something to say you have no dogs? 
             waitingDogs = getWaitingDogs(A, otherOwners);
-        }
+
         if (waitingDogs.size() == 0) {
             simPrinter.println("There are no waiting dogs for " + A.getNameAsString());
             ret.instruction = Instruction.NOTHING;
@@ -154,15 +188,19 @@ public class Player extends dogs.sim.Player {
         float offset = N + N*nodeSeparation; // distance between node and next Owner (top of isosceles)
         
         boolean foundTarget = false; 
-        if (nonRandos.size() >= 2) { // we can throw to someone else that's smart!  
+        // if only one team 1 player and multiple other team players
+        if (otherOwners.size()>0 && teamOwners.get(1).size()==1) {
+            B = otherOwners.get(0);
+            if (distanceBetweenTwoPoints(A.getLocation(), B.getLocation()) <= 40)
+                foundTarget = true;
+        }
+        else if (nonRandos.size() >= 2) { // we can throw to someone else that's smart!  
             // pick the next person in the cycle, ensuring that they fall within 40 meters
 
-            for (Owner o : nonRandos) {
-                simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + o.getLocation());
-            }
+            // for (Owner o : nonRandos) 
+            //     simPrinter.println("Owner: " + o.getNameAsString() + "\tLocation: " + o.getLocation());
 
             B = ownerCycle.get((findOwnerIndex(ownerCycle,A) + 1) % ownerCycle.size());
-            
             if (distanceBetweenTwoPoints(A.getLocation(), B.getLocation()) > 40) {
                 for (Owner o : nonRandos) {
                     if (o == A) continue; 
@@ -184,9 +222,8 @@ public class Player extends dogs.sim.Player {
             }
         }
         else { // case where nobody else is within the range
-            // TODO: throw in a random direction just to get some exercise? 
-            ret.instruction = Instruction.NOTHING;
-            return ret;
+            // throw in a random direction just to get some exercise? 
+            return randomThrow(A, ret);
         }
 
         Double Ax = A.getLocation().getRow();
@@ -260,7 +297,6 @@ public class Player extends dogs.sim.Player {
             else
                 newOwnerCycle.add(findOwner(otherOwners, o));
         }
-
         this.randos = newRandos;
         this.nonRandos = newNonRandos; 
         this.ownerCycle = newOwnerCycle;
@@ -270,8 +306,7 @@ public class Player extends dogs.sim.Player {
     /**
      * Get the location where the current player will move to in the circle
      */
-    private void updateLocations() {
-        int numOwners = nonRandos.size();
+    private void updateLocations(int numOwners) {
         double dist = 40.0;     // use 40 for now
         double fromEdges = 10.0; // how far from the edges of the park 
         // OPTION: change dist and fromEdges to change the shape
@@ -294,25 +329,45 @@ public class Player extends dogs.sim.Player {
 
     private void findRandos(Owner myOwner, List<Owner> otherOwners) {
         nonRandos.add(myOwner);
+        List<String> teams = new ArrayList<String>(Arrays.asList("papaya", "two", "three", "zythum", "Zyzzogeton"));
+        teamOwners.put(2, new ArrayList<String>());
+        teamOwners.put(3, new ArrayList<String>());
+        teamOwners.put(4, new ArrayList<String>());
+        teamOwners.put(5, new ArrayList<String>());
+        List<String> temp = new ArrayList<String>();
+        temp.add(myOwner.getNameAsString());
+        teamOwners.put(1, temp);
+
         for (Owner person : otherOwners) {
             String signal = person.getCurrentSignal();
-            if (signal != null && !signal.isEmpty()) {
+            if (signal != null && !signal.isEmpty() && teams.contains(signal)) {
                 nonRandos.add(person);
                 String name = person.getNameAsString();
-                List<String> teams = new ArrayList<String>(Arrays.asList("one", "two", "three", "four", "five"));
-                for (int i = 0; i < teams.size(); i++) {
-                    if (signal.equals(teams.get(i))) {
-                        if (teamOwners.get(i+1) == null)
-                            teamOwners.put(i+1, new ArrayList<String>());
-                        teamOwners.get(i+1).add(name);
-                    }
-                }
+                teamOwners.get(teams.indexOf(signal) + 1).add(name);        
             }
-            else
+            else {
                 randos.add(person);
+            }
         }
         for (Owner person : randos)
             simPrinter.println(person.getNameAsString() + " is a random player");
+    }
+
+    private Directive randomThrow(Owner myOwner, Directive directive) {
+        ParkLocation ret = new ParkLocation(); 
+        while (distanceBetweenTwoPoints(ret, myOwner.getLocation()) < 40) { 
+            double randomAngle = Math.toRadians(random.nextDouble() * 360);
+            double ballRow = myOwner.getLocation().getRow() + 40.0 * Math.sin(randomAngle);
+            double ballColumn = myOwner.getLocation().getColumn() + 40.0 * Math.cos(randomAngle);
+            if(ballRow < 0.0) ballRow = 0.0;
+            if(ballRow > ParkLocation.PARK_SIZE - 1) ballRow = ParkLocation.PARK_SIZE - 1;
+            if(ballColumn < 0.0) ballColumn = 0.0;
+            if(ballColumn > ParkLocation.PARK_SIZE - 1) ballColumn = ParkLocation.PARK_SIZE - 1;
+            ret = new ParkLocation(ballRow, ballColumn); 
+            directive.parkLocation = ret;
+        }
+        simPrinter.println(myOwner.getNameAsString() + " had to do a random throw that was " + distanceBetweenTwoPoints(ret, myOwner.getLocation()) + " meters long");
+        return directive;
     }
 
     /**
@@ -359,6 +414,68 @@ public class Player extends dogs.sim.Player {
             }
         }
         return shape;
+    }
+
+    /**
+     * Check if owner is too far from other owners
+     *
+     * @param myOwner      my owner
+     * @param otherOwners  list of other owners
+     * @return             true if too far from all owners, false if not
+     *
+     */
+    private boolean checkTooFarFromOtherOwners(Owner myOwner, List<Owner> otherOwners) {
+        if (otherOwners.size() == 0)
+            return false;
+        ParkLocation myLoc = myOwner.getLocation();
+        for (Owner owner : otherOwners) {
+            ParkLocation otherLoc = owner.getLocation();
+            if (distanceBetweenTwoPoints(myLoc, otherLoc) <= 40)
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Get other owner closest to this owner
+     *
+     * @param myOwner      my owner
+     * @param otherOwners  list of other owners
+     * @return             true if too far from all owners, false if not
+     *
+     */
+    private Owner getClosestOwner(Owner myOwner, List<Owner> otherOwners) {
+        double dist = Double.MAX_VALUE;
+        ParkLocation myLoc = myOwner.getLocation();
+        Owner closestOwner = new Owner();
+        for (Owner owner : otherOwners) {
+            ParkLocation otherLoc = owner.getLocation();
+            double newDist = distanceBetweenTwoPoints(myLoc, otherLoc);
+            if (newDist < dist) {
+                dist = newDist;
+                closestOwner = owner;
+            }
+        }
+        return closestOwner;
+    }
+
+    /**
+     * Move closer to the closest owner
+     *
+     * @param myOwner      my owner
+     * @param otherOwners  list of other owners
+     * @return             true if too far from all owners, false if not
+     *
+     */
+    private ParkLocation moveCloserToOtherOwners(Owner myOwner, List<Owner> otherOwners) {
+        double dist = Double.MAX_VALUE;
+        ParkLocation myLoc = myOwner.getLocation();
+        Owner closestOwner = getClosestOwner(myOwner, otherOwners);
+        ParkLocation target = closestOwner.getLocation();
+        double magnitude = distanceBetweenTwoPoints(myLoc, target);
+        double x = ((target.getRow()-myLoc.getRow())*5/magnitude)+myLoc.getRow();
+        double y = ((target.getColumn()-myLoc.getColumn())*5/magnitude)+myLoc.getColumn();
+        return new ParkLocation(x,y);
     }
 
     /**
@@ -409,10 +526,6 @@ public class Player extends dogs.sim.Player {
      */
     private List<Dog> getWaitingDogs(Owner myOwner, List<Owner> otherOwners) {
         List<Dog> waitingDogs = new ArrayList<>();
-    	for(Dog dog : myOwner.getDogs()) {
-    		if(dog.isWaitingForOwner(myOwner))
-    			waitingDogs.add(dog);
-    	}
     	for(Owner otherOwner : otherOwners) {
     		for(Dog dog : otherOwner.getDogs()) {
     			if(dog.isWaitingForOwner(myOwner))
@@ -427,12 +540,26 @@ public class Player extends dogs.sim.Player {
         return waitingDogs;
     }
 
-    private List<Dog> myDogsWaiting(Owner myOwner) {
+    private List<Dog> myDogsWaiting(Owner myOwner) { 
         List<Dog> waitingDogs = new ArrayList<>();
     	for(Dog dog : myOwner.getDogs()) {
     		if(dog.isWaitingForOwner(myOwner))
     			waitingDogs.add(dog);
-    	}
+        }
+        Collections.sort(waitingDogs, new Comparator<Dog>() {
+            @Override public int compare(Dog d1, Dog d2) {
+                return d1.getExerciseTimeCompleted().compareTo(d2.getExerciseTimeCompleted());
+            }
+        });
+
+        // dont exercise dogs that are already exercised
+        Iterator<Dog> itr = waitingDogs.iterator();
+        while (itr.hasNext()) {
+            Dog d = itr.next();
+            if (d.getExerciseTimeRemaining() == 0.0) {
+                itr.remove();
+            }
+        }
         return waitingDogs;
     } 
     
