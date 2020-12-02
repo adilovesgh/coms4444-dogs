@@ -91,6 +91,7 @@ public class Player extends dogs.sim.Player {
 		}
 
 		else if(round == 6){
+
 			for (Owner owner : otherOwners){
 				if (Arrays.asList(OTHER_TEAM_NAMES).contains(owner.getCurrentSignal()))
 					teamsPresent.put(owner.getNameAsString(),owner.getCurrentSignal());
@@ -102,8 +103,19 @@ public class Player extends dogs.sim.Player {
 			if (clonesPresent.size() > 0)
 				setCloneOrder(myOwner);
 
-			if (cloneOrder > 1)
-				targetRow += CLONE_DISTANCE;
+
+
+			//System.out.println("calculating");
+			List<Double> init = new ArrayList<>();
+			init.add(2.0);
+			init.add(2.0);
+			List<List<Double>> locations = generateLocations(init, clonesPresent.size());
+			//System.out.println("List:" + locations);
+
+			List<Double> targetLoc = locations.get(cloneOrder);
+
+			targetRow = targetLoc.get(0);
+			targetColumn = targetLoc.get(1);
 
 			simPrinter.println(myOwner.getNameAsString() + "'s list: " + clonesPresent);
 			simPrinter.println(myOwner.getNameAsString() + "'s order: " + cloneOrder);
@@ -111,7 +123,6 @@ public class Player extends dogs.sim.Player {
 
 
 		if(moving){
-
 			if(myOwner.getLocation().getColumn() < targetColumn || myOwner.getLocation().getRow() < targetRow) {
 				//simPrinter.println(myOwner.getLocation().toString());
 				double rowDelta = myOwner.getLocation().getRow() - targetRow;
@@ -157,6 +168,48 @@ public class Player extends dogs.sim.Player {
 		saveConversation(round, otherOwners);
 
 		return directive;
+	}
+
+	private List<List<Double>> generateLocations(List<Double> initialPoint, int numNodes) {
+		List<List<Double>> locations = new ArrayList<>();
+
+		//column 1 base point
+		Double row = initialPoint.get(0);
+		Double column = initialPoint.get(1);
+
+		//column 2 base point
+		Double rowBase2 = row + CLONE_DISTANCE/2;
+		Double colBase2 = column + (CLONE_DISTANCE/2)*Math.tan(Math.toRadians(60.0));
+		//System.out.println("tan is " + Math.tan(Math.toRadians(60.0)));
+		
+		//add first and second base points to output array
+		List<Double> secondRowBase = new ArrayList<>();
+		secondRowBase.add(rowBase2);
+		secondRowBase.add(colBase2);
+
+		//add first two points
+		locations.add(initialPoint);
+		locations.add(secondRowBase);
+
+		//generate the other n-2 points
+		for(int i = 0; i < numNodes - 2; i++) {
+			//every other one should be first column
+			double rowOffset = (Math.floorDiv(i,2)+1)*CLONE_DISTANCE;
+
+			List<Double> nextPoint = new ArrayList<>();
+
+			if(i%2 == 0) {
+				nextPoint.add(row + rowOffset);
+				nextPoint.add(column);
+			}
+			else {
+				nextPoint.add(rowBase2 + rowOffset);
+				nextPoint.add(colBase2);
+			}
+			locations.add(nextPoint);
+		}
+
+		return locations;
 	}
 
 	private List<Double> findLocation() {
