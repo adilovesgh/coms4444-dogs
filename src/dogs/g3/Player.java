@@ -32,6 +32,9 @@ public class Player extends dogs.sim.Player {
 	private int count = 0;
 	private int numCenterPlayers = 0;
 	private ParkLocation center;
+	private Double MAX_THROW_DIST = 40.0;
+	private Double MAX_MOVE_DIST = 5.0;
+
 	private int radius;
 
 	/**
@@ -265,56 +268,6 @@ public class Player extends dogs.sim.Player {
 				return directive;
 			}
 
-			/*
-			 * 
-			 * //if any of my own dogs are waiting, throw the ball for the least exercised
-			 * dog to some other owner if (!ownedByMe.isEmpty()){ directive.instruction =
-			 * Instruction.THROW_BALL; List<Dog> sortedMyDogs = sortDogs(ownedByMe);
-			 * directive.dogToPlayWith = sortedMyDogs.get(0); for (Owner throwOwner :
-			 * this.otherOwners){ Double dist = distanceBetweenOwners(throwOwner,
-			 * this.myOwner); //System.out.println(dist); if (dist < 40) { Double ballRow =
-			 * throwOwner.getLocation().getRow(); Double ballColumn =
-			 * throwOwner.getLocation().getColumn(); Random r = new Random(); ballRow +=
-			 * r.nextInt(5 + 5) - 5; directive.parkLocation = new ParkLocation(ballRow,
-			 * ballColumn); return directive; } }
-			 * 
-			 * //if all other owners are >40 distance away, throw the ball randomly double
-			 * randomDistance = 40.0; double randomAngle =
-			 * Math.toRadians(random.nextDouble() * 360); double ballRow =
-			 * myOwner.getLocation().getRow() + randomDistance * Math.sin(randomAngle);
-			 * double ballColumn = myOwner.getLocation().getColumn() + randomDistance *
-			 * Math.cos(randomAngle); if(ballRow < 0.0) ballRow = 0.0; if(ballRow >
-			 * ParkLocation.PARK_SIZE - 1) ballRow = ParkLocation.PARK_SIZE - 1;
-			 * if(ballColumn < 0.0) ballColumn = 0.0; if(ballColumn > ParkLocation.PARK_SIZE
-			 * - 1) ballColumn = ParkLocation.PARK_SIZE - 1; directive.parkLocation = new
-			 * ParkLocation(ballRow, ballColumn); return directive;
-			 * 
-			 * }
-			 * 
-			 * //if any of the others' dogs is waiting, throw the ball back to its owner if
-			 * (!ownedByMe.isEmpty()) { directive.instruction = Instruction.THROW_BALL;
-			 * List<Dog> sortedOtherDogs = sortDogs(notOwnedByMe); directive.dogToPlayWith =
-			 * sortedOtherDogs.get(0); Owner throwOwner =
-			 * directive.dogToPlayWith.getOwner(); Double dist =
-			 * distanceBetweenOwners(throwOwner, this.myOwner); if (dist < 40) { Double
-			 * ballRow = throwOwner.getLocation().getRow(); Double ballColumn =
-			 * throwOwner.getLocation().getColumn(); Random r = new Random(); ballRow +=
-			 * r.nextInt(5 + 5) - 5; directive.parkLocation = new ParkLocation(ballRow,
-			 * ballColumn); return directive; }
-			 * 
-			 * //if its owner is >40 distance away, throw the ball in its owner's direction
-			 * for 40 meters double dx = throwOwner.getLocation().getRow() -
-			 * myOwner.getLocation().getRow(); double dy =
-			 * throwOwner.getLocation().getColumn() - myOwner.getLocation().getColumn();
-			 * double ballRow = myOwner.getLocation().getRow() + dx * (40.0/dist); double
-			 * ballColumn = myOwner.getLocation().getColumn() + dy * (40.0/dist); if(ballRow
-			 * < 0.0) ballRow = 0.0; if(ballRow > ParkLocation.PARK_SIZE - 1) ballRow =
-			 * ParkLocation.PARK_SIZE - 1; if(ballColumn < 0.0) ballColumn = 0.0;
-			 * if(ballColumn > ParkLocation.PARK_SIZE - 1) ballColumn =
-			 * ParkLocation.PARK_SIZE - 1; directive.parkLocation = new
-			 * ParkLocation(ballRow, ballColumn); return directive; }
-			 */
-
 			// otherwise do nothing
 			directive.instruction = Instruction.NOTHING;
 			return directive;
@@ -423,9 +376,16 @@ public class Player extends dogs.sim.Player {
 		return distanceToOwner2.compareTo(distanceToOwner1);
 	}
 
+	// calculate the distance between two owners
 	private Double distanceBetweenOwners(Owner u1, Owner u2) {
-		Double dX = u1.getLocation().getRow() - u2.getLocation().getRow();
-		Double dY = u1.getLocation().getColumn() - u2.getLocation().getColumn();
+		Double dist = distanceBetweenLocs(u1.getLocation(), u2.getLocation());
+		return dist;
+	}
+
+	//calculate the distance between park locations
+	private Double distanceBetweenLocs(ParkLocation loc1, ParkLocation loc2) {
+		Double dX = loc1.getRow() - loc2.getRow();
+		Double dY = loc1.getColumn() - loc2.getColumn();
 		Double dist = Math.sqrt(dX * dX + dY * dY);
 		return dist;
 	}
@@ -485,6 +445,77 @@ public class Player extends dogs.sim.Player {
 		return allDogs;
 	}
 
+	/**
+	* throw the ball to a specified owner
+	* if the owner is more than 40 meters away, throw toward the direction for 40m
+	* @param targetOwner	the owner to throw the ball to
+	**/
+	private Directive throwToOwner(Owner myOwner, Owner targetOwner){
+		ParkLocation targetLoc = targetOwner.getLocation();
+		return throwToLoc(myOwner, targetLoc);
+	}
+
+	/**
+	* throw the ball to a specified target Park location
+	* if the location is more than 40m away, throw toward the direction for 40m
+	* @param targetLoc	the target location to throw the ball to
+	**/
+	private Directive throwToLoc(Owner myOwner, ParkLocation targetLoc){
+		Directive directive = new Directive();
+		directive.instruction = Instruction.THROW_BALL;
+		Double ballRow, ballColumn;
+
+		ParkLocation myLoc = myOwner.getLocation();
+		Double dist = distanceBetweenLocs(myLoc, targetLoc);
+		if (dist <= this.MAX_THROW_DIST) {
+			ballRow = targetLoc.getRow();
+			ballColumn = targetLoc.getColumn();
+		} else {
+			Double curX = myLoc.getRow();
+			Double curY = myLoc.getColumn();
+			Double targetX = targetLoc.getRow();
+			Double targetY = targetLoc.getColumn();
+			Double dX = targetX - curX;
+			Double dY = targetY - curY;
+			ballRow = curX + dX * (this.MAX_THROW_DIST/dist);
+			ballColumn = curY + dY * (this.MAX_THROW_DIST/dist); 
+		}
+
+		directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+		directive.parkLocation = getValidLocation(directive.parkLocation);
+		return directive;
+	}
+
+	/**
+	*
+	*
+	**/
+	private Directive moveToPos(Owner myOwner, ParkLocation targetPos){
+		Directive directive = new Directive();
+		directive.instruction = Instruction.MOVE;
+		Double nextRow, nextColumn;
+
+		ParkLocation myLoc = myOwner.getLocation();
+		Double dist = distanceBetweenLocs(myLoc, targetPos);
+		if (dist <= this.MAX_MOVE_DIST) {
+			nextRow = targetPos.getRow();
+			nextColumn = targetPos.getColumn();
+		} else { //if targetPos is more than 5m away, move toward the target position for 5m
+			Double curX = myLoc.getRow();
+			Double curY = myLoc.getColumn();
+			Double targetX = targetPos.getRow();
+			Double targetY = targetPos.getColumn();
+			Double dX = targetX - curX;
+			Double dY = targetY - curY;
+			nextRow = curX + dX * (this.MAX_THROW_DIST/dist);
+			nextColumn = curY + dY * (this.MAX_THROW_DIST/dist); 
+		}
+
+		directive.parkLocation = new ParkLocation(nextRow, nextColumn);
+		directive.parkLocation = getValidLocation(directive.parkLocation);
+		return directive;
+	}
+
 	private Directive throwRandomly(){
 		double randomDistance = 40.0;
 		double randomAngle = 0.0;
@@ -512,5 +543,23 @@ public class Player extends dogs.sim.Player {
 			ballColumn = ParkLocation.PARK_SIZE - 1;
 		directive.parkLocation = new ParkLocation(ballRow, ballColumn);
 		return directive;
+	}
+
+	/**
+	* checks if a park location is valid
+	* if out of range, return a valid park location
+	* @param loc 	ParkLocation to verify
+	*/
+	private ParkLocation getValidLocation(ParkLocation loc){
+		Double row = loc.getRow();
+		Double col = loc.getColumn();
+		
+		row = Math.max(0.0, row);
+		col = Math.max(0.0, col);
+		row = Math.min(ParkLocation.PARK_SIZE - 1, row);
+		col = Math.min(ParkLocation.PARK_SIZE - 1, col);
+
+		return new ParkLocation(row, col);
+
 	}
 }
