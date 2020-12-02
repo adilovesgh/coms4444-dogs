@@ -110,11 +110,29 @@ public class Player extends dogs.sim.Player {
             return directive;
         }
 
-        // if not too far from all other owners, start throwing
-        if (!checkTooFarFromOtherOwners(myOwner, otherOwners)) {
-            // OPTION: change how far each node is from the other one in the isosceles triangle
-            // float nodeSeparation = 0.0f;
-            float nodeSeparation = 2.0f;
+        // OPTION: change how far each node is from the other one in the isosceles triangle
+        // float nodeSeparation = 0.0f;
+        float nodeSeparation = 2.0f;
+        // special case collaboration with team 3 and team 4
+        if (teamOwners.get(1).size()==1 && (teamOwners.get(3).size()>=2 || teamOwners.get(4).size()>=2)) {
+            List<Owner> collabOwners = new ArrayList<>();
+            for (Owner owner : otherOwners) {
+                String name = owner.getNameAsString();
+                if (teamOwners.get(3).contains(name) || teamOwners.get(4).contains(name))
+                    collabOwners.add(owner);
+            }
+            if (!checkTooFarFromOtherOwners(myOwner, collabOwners)) {
+                List<Owner> closestOwners = new ArrayList<>();
+                closestOwners.add(getClosestOwner(myOwner, collabOwners));
+                return throwToNext(myOwner, closestOwners, nodeSeparation);
+            }
+            else {
+                directive.instruction = Instruction.MOVE;
+                directive.parkLocation = moveCloserToOtherOwners(myOwner, collabOwners);
+                return directive;
+            }
+        }
+        else if (!checkTooFarFromOtherOwners(myOwner, otherOwners)) {  // if not too far from all other owners, start throwing
             if (otherOwners.size()>0 && teamOwners.get(1).size()==1) {
                 List<Owner> closestOwners = new ArrayList<>();
                 closestOwners.add(getClosestOwner(myOwner, otherOwners));
@@ -310,6 +328,10 @@ public class Player extends dogs.sim.Player {
     private void findRandos(Owner myOwner, List<Owner> otherOwners) {
         nonRandos.add(myOwner);
         List<String> teams = new ArrayList<String>(Arrays.asList("papaya", "two", "three", "zythum", "Zyzzogeton"));
+        teamOwners.put(2, new ArrayList<String>());
+        teamOwners.put(3, new ArrayList<String>());
+        teamOwners.put(4, new ArrayList<String>());
+        teamOwners.put(5, new ArrayList<String>());
         List<String> temp = new ArrayList<String>();
         temp.add(myOwner.getNameAsString());
         teamOwners.put(1, temp);
@@ -319,8 +341,6 @@ public class Player extends dogs.sim.Player {
             if (signal != null && !signal.isEmpty() && teams.contains(signal)) {
                 nonRandos.add(person);
                 String name = person.getNameAsString();
-                if (teamOwners.get(teams.indexOf(signal) + 1) == null)
-                    teamOwners.put(teams.indexOf(signal) + 1, new ArrayList<String>());
                 teamOwners.get(teams.indexOf(signal) + 1).add(name);        
             }
             else {
