@@ -2,6 +2,8 @@ package dogs.g5;
 
 import java.util.*;
 
+import javax.swing.text.ChangedCharSetException;
+
 import dogs.sim.Directive;
 import dogs.sim.Directive.Instruction;
 import dogs.sim.Dictionary;
@@ -150,7 +152,8 @@ public class Player extends dogs.sim.Player {
 
 		else if (throwing){
 			if(waitingDogs.size() > 0){
-				setThrowLocation(directive, waitingDogs, myOwner);				
+				// CHANGE PARAMETER
+				setThrowLocation(directive, waitingDogs, myOwner, otherOwners.get(1));				
 			}
 		}
 
@@ -258,57 +261,66 @@ public class Player extends dogs.sim.Player {
 		return false;
 	}
 
-	private void setThrowLocation(Directive directive, List<Dog> waitingDogs, Owner myOwner){
-
+	private void setThrowLocation(Directive directive, List<Dog> waitingDogs, Owner myOwner, Owner targetOwner){
 		double ballRow = 0.0;
 		double ballColumn = 0.0;
-		double randomAngle = Math.toRadians(random.nextDouble() * 360);
+		double angle = getAngle(myOwner, targetOwner);
 
 		directive.instruction = Instruction.THROW_BALL;
 		directive.dogToPlayWith = chooseDog(waitingDogs);
 		
-		
-		
 		switch (directive.dogToPlayWith.getBreed()){
 
 			case LABRADOR:
-				ballRow = myOwner.getLocation().getRow() + LABRADOR_THROW_DISTANCE * Math.sin(C1_OFFSET + LABRADOR_OFFSET_ANGLE);
-				ballColumn = myOwner.getLocation().getColumn() + LABRADOR_THROW_DISTANCE * Math.cos(C1_OFFSET + LABRADOR_OFFSET_ANGLE);
+				ballRow = myOwner.getLocation().getRow() + LABRADOR_THROW_DISTANCE * Math.sin(angle + LABRADOR_OFFSET_ANGLE);
+				ballColumn = myOwner.getLocation().getColumn() + LABRADOR_THROW_DISTANCE * Math.cos(angle + LABRADOR_OFFSET_ANGLE);
 
+				/*
 				if (cloneOrder == 2) {
 					ballRow = myOwner.getLocation().getRow() + LABRADOR_THROW_DISTANCE * Math.sin(C2_OFFSET + LABRADOR_OFFSET_ANGLE);
 					ballColumn = myOwner.getLocation().getColumn() + LABRADOR_THROW_DISTANCE * Math.cos(C2_OFFSET + LABRADOR_OFFSET_ANGLE);
 				}
+				*/
+
 				break;
 
 			case POODLE:
-				ballRow = myOwner.getLocation().getRow() + POODLE_THROW_DISTANCE * Math.sin(C1_OFFSET + POODLE_OFFSET_ANGLE);
-				ballColumn = myOwner.getLocation().getColumn() + POODLE_THROW_DISTANCE * Math.cos(C1_OFFSET + POODLE_OFFSET_ANGLE);
-
+				ballRow = myOwner.getLocation().getRow() + POODLE_THROW_DISTANCE * Math.sin(angle + POODLE_OFFSET_ANGLE);
+				ballColumn = myOwner.getLocation().getColumn() + POODLE_THROW_DISTANCE * Math.cos(angle + POODLE_OFFSET_ANGLE);
+				
+				/*
 				if (cloneOrder == 2) {
 					ballRow = myOwner.getLocation().getRow() + POODLE_THROW_DISTANCE * Math.sin(C2_OFFSET + POODLE_OFFSET_ANGLE);
 					ballColumn = myOwner.getLocation().getColumn() + POODLE_THROW_DISTANCE * Math.cos(C2_OFFSET + POODLE_OFFSET_ANGLE);
 				}
+				*/
+
 				break;
 
 			case SPANIEL:
-				ballRow = myOwner.getLocation().getRow() + SPANIEL_THROW_DISTANCE * Math.sin(C1_OFFSET + SPANIEL_OFFSET_ANGLE);
-				ballColumn = myOwner.getLocation().getColumn() + SPANIEL_THROW_DISTANCE * Math.cos(C1_OFFSET + SPANIEL_OFFSET_ANGLE);
+				ballRow = myOwner.getLocation().getRow() + SPANIEL_THROW_DISTANCE * Math.sin(angle + SPANIEL_OFFSET_ANGLE);
+				ballColumn = myOwner.getLocation().getColumn() + SPANIEL_THROW_DISTANCE * Math.cos(angle + SPANIEL_OFFSET_ANGLE);
 
+				/*
 				if (cloneOrder == 2) {
 					ballRow = myOwner.getLocation().getRow() + SPANIEL_THROW_DISTANCE * Math.sin(C2_OFFSET + SPANIEL_OFFSET_ANGLE);
 					ballColumn = myOwner.getLocation().getColumn() + SPANIEL_THROW_DISTANCE * Math.cos(C2_OFFSET + SPANIEL_OFFSET_ANGLE);
 				}
+				*/
+
 				break;
 
 			case TERRIER:
-				ballRow = myOwner.getLocation().getRow() + TERRIER_THROW_DISTANCE * Math.sin(C1_OFFSET + TERRIER_OFFSET_ANGLE);
-				ballColumn = myOwner.getLocation().getColumn() + TERRIER_THROW_DISTANCE * Math.cos(C1_OFFSET + TERRIER_OFFSET_ANGLE);
-
+				ballRow = myOwner.getLocation().getRow() + TERRIER_THROW_DISTANCE * Math.sin(angle + TERRIER_OFFSET_ANGLE);
+				ballColumn = myOwner.getLocation().getColumn() + TERRIER_THROW_DISTANCE * Math.cos(angle + TERRIER_OFFSET_ANGLE);
+				
+				/*
 				if (cloneOrder == 2) {
 					ballRow = myOwner.getLocation().getRow() + TERRIER_THROW_DISTANCE * Math.sin(C2_OFFSET + TERRIER_OFFSET_ANGLE);
 					ballColumn = myOwner.getLocation().getColumn() + TERRIER_THROW_DISTANCE * Math.cos(C2_OFFSET + TERRIER_OFFSET_ANGLE);
 				}
+				*/
+
 				break;
 
 			default:
@@ -325,6 +337,79 @@ public class Player extends dogs.sim.Player {
 			ballColumn = ParkLocation.PARK_SIZE - 1;
 
 		directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+	}
+
+	private Double getAngle(Owner myOwner, Owner targetOwner){
+		int quad = getQuadrant(myOwner, targetOwner);
+		Double myOwnerX = myOwner.getLocation().getColumn();
+		Double myOwnerY = myOwner.getLocation().getRow();
+		Double targetX = targetOwner.getLocation().getColumn();
+		Double targetY = targetOwner.getLocation().getRow();
+		Double deltaX = Math.abs(myOwnerX - targetX);
+		Double deltaY = Math.abs(myOwnerY - targetY);
+		Double angle = 0.0;
+
+		if (quad == 1){
+			angle = Math.atan(deltaY / deltaX);
+		}
+		else if (quad == 2){
+			angle = Math.atan(deltaX / deltaY) + (Math.PI / 2);
+		}
+		else if (quad == 3){
+			angle = Math.atan(deltaY / deltaX) + Math.PI;
+		}
+		else if (quad == 4){
+			angle = Math.atan(deltaX / deltaY) + (3 * Math.PI / 2);
+		}
+
+		return angle;
+	}
+
+	private int getQuadrant(Owner myOwner, Owner targetOwner){
+		Double myOwnerX = myOwner.getLocation().getColumn();
+		Double myOwnerY = myOwner.getLocation().getRow();
+		Double targetX = targetOwner.getLocation().getColumn();
+		Double targetY = targetOwner.getLocation().getRow();
+		Double deltaX = myOwnerX - targetX;
+		Double deltaY = myOwnerY - targetY;
+		int quad = 0;
+		
+		if (Double.compare(deltaX, 0.0) > 0){
+			if (Double.compare(deltaY, 0.0) > 0){
+				quad = 3;
+			}
+			else if (Double.compare(deltaY, 0.0) < 0){
+				quad = 2;
+			}
+			else{
+				quad = 3;
+			}
+		}
+		else if (Double.compare(deltaX, 0.0) < 0){
+			if (Double.compare(deltaY, 0.0) > 0){
+				quad = 4;
+			}
+			else if (Double.compare(deltaY, 0.0) < 0){
+				quad = 1;
+			}
+			else{
+				quad = 1;
+			}
+		}
+		else{
+			if (Double.compare(deltaY, 0.0) > 0){
+				quad = 4;
+			}
+			else if (Double.compare(deltaY, 0.0) < 0){
+				quad = 2;
+			}
+			// Same coordinates
+			else{
+				quad = 1;
+			}
+		}
+
+		return quad;
 	}
 
 	private boolean dogIsDone(Dog dog){
