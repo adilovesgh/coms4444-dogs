@@ -461,15 +461,16 @@ public class Player extends dogs.sim.Player {
 		}
 
 		// find the neighbor with the least number of dogs waiting for/heading to
+		Owner leastBusyOwner = null;
 		if (neighbors.size() > 0) {
-			Owner leastBusyOwner = neighbors.get(0);
+			leastBusyOwner = neighbors.get(0);
 			for (Owner neighbor : neighbors) {
 				if (busyMap.get(neighbor) < busyMap.get(leastBusyOwner)) {
 					leastBusyOwner = neighbor;
 				}
 			}
 		}
-		return null;
+		return leastBusyOwner;
 	}
 
 	/**
