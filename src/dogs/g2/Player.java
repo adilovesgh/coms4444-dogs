@@ -8,7 +8,7 @@ public class Player extends dogs.sim.Player {
     final boolean PRINT_STATEMENTS = true;
     private boolean colab;
     private double run;
-
+  
     private void print(String s) {
         if (PRINT_STATEMENTS) {
             System.out.println(s);
@@ -18,13 +18,13 @@ public class Player extends dogs.sim.Player {
     private static int instanceCount = 0;
     private int myInstance = 0;
     private ParkLocation initiaLocation;
-    
+
     /**
      * Player constructor
      *
      * @param rounds           number of rounds
      * @param numDogsPerOwner  number of dogs per owner
-     * @param numOwners        number of owners
+     * @param numOwners	       number of owners
      * @param seed             random seed
      * @param simPrinter       simulation printer
      *
