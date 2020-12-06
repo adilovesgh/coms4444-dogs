@@ -121,14 +121,22 @@ public class Player extends dogs.sim.Player {
         }
         else if (this.coOwners.isEmpty() && this.g1Owners.size() > 1) {
             myDirective.instruction = Directive.Instruction.MOVE;
-            this.lastPosition = new ParkLocation(this.g1Owners.get(0).getLocation().getRow() + 10, this.g1Owners.get(0).getLocation().getColumn());
-            if (!myOwner.getLocationAsString().equals(this.lastPosition.toString())) {
+            this.lastPosition = new ParkLocation(this.g1Owners.get(0).getLocation().getRow(), this.g1Owners.get(0).getLocation().getColumn());
+            if (!myOwner.getLocationAsString().equals(this.lastPosition.toString()) && !this.coopInPosition) {
                 myDirective.parkLocation = this.lastPosition;
                 return myDirective;
             }
             else {
                 List<String> g1Signals = getOtherOwnersSignals(this.g1Owners);
                 if (g1Signals.contains(this.g1FinalPosition)) this.coopInPosition = true;
+
+                myDirective.instruction = Directive.Instruction.MOVE;
+                this.lastPosition = getTriangularLoc(myOwner.getLocation(), "g1");
+                if (!myOwner.getLocationAsString().equals(this.lastPosition.toString())) {
+                    myDirective.parkLocation = this.lastPosition;
+                    return myDirective;
+                }
+
                 if (this.coopInPosition && round % 100 == 1) {
                     myDirective.dogToPlayWith = getMyAvailableDog(myOwner);
                     myDirective.instruction = Directive.Instruction.THROW_BALL;
@@ -141,7 +149,7 @@ public class Player extends dogs.sim.Player {
         else {
             this.allLocationMap = getCircularLocations(200, 200, myOwner, 39.0, false, 10.0);
             ParkLocation finalLocation = this.allLocationMap.get(myOwner).location;
-            updateDistances(otherOwners, myOwner);
+            //updateDistances(otherOwners, myOwner);
 
             if (finalLocation.getRow().intValue() != myOwner.getLocation().getRow().intValue() ||
                     finalLocation.getColumn().intValue() != myOwner.getLocation().getColumn().intValue()) {
@@ -195,6 +203,29 @@ public class Player extends dogs.sim.Player {
         }
 
         return myDirective;
+    }
+
+    private ParkLocation getTriangularLoc(ParkLocation myLocation, String group) {
+        Owner nextVertice = new Owner();
+        Owner lastVertice = new Owner();
+        int minDist = 200;
+
+        List<Owner> tmpOwners = new ArrayList<>();
+
+        if (group.equals("g1")) tmpOwners = this.g1Owners;
+        else if (group.equals("g2")) tmpOwners = this.g2Owners;
+        else if (group.equals("g3")) tmpOwners = this.g3Owners;
+        else if (group.equals("g5")) tmpOwners = this.g5Owners;
+
+        for (Owner owner : tmpOwners) {
+            if (owner.getLocationAsString().equals(myLocation.toString())) lastVertice = owner;
+            if (!owner.getLocationAsString().equals(myLocation.toString())) {
+                if (getDist(owner.getLocation(), myLocation) < minDist) nextVertice = owner;
+            }
+        }
+
+        
+
     }
 
     private ParkLocation getRandom40m(ParkLocation location) {
