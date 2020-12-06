@@ -208,7 +208,6 @@ public class Player extends dogs.sim.Player {
 			for (Dog dog : waitingDogs) {
 				if (!dog.getOwner().equals(this.myOwner)) {
 					notOwnedByMe.add(dog);
-					// simPrinter.println("found");
 				} else {
 					ownedByMe.add(dog);
 				}
@@ -220,14 +219,10 @@ public class Player extends dogs.sim.Player {
 			// }
 			// }
 			// System.out.println(this.graph.getConnections(alice).toString());
-			List<Dog> sortedDogs = new ArrayList<>();
-			for (Dog d : ownedByMe) {
-				sortedDogs.add(d);
-			}
-			List<Dog> sortedDogsNotMine = sortDogsByRemainingWaitTime(notOwnedByMe);
 
-			for (Dog d : sortedDogsNotMine) {
-				sortedDogs.add(d);
+			List<Dog> sortedDogs = sortDogsByRemainingWaitTime(waitingDogs);
+			for (Dog dog: sortedDogs) {
+				simPrinter.println(dog.getWaitingTimeRemaining());
 			}
 			// out.println(waitingDogs.size() + " " + sortedDogs.size() + " " +
 			// sortedDogsNotMine.size() + " " + notOwnedByMe.size() + " " +
@@ -305,12 +300,13 @@ public class Player extends dogs.sim.Player {
 				waitingDogs.add(dog);
 				count += 1;
 			}
-		}
-		for (Owner otherOwner : otherOwners) {
-			for (Dog dog : otherOwner.getDogs()) {
-				if (dog.isWaitingForOwner(myOwner)) {
-					waitingDogs.add(dog);
-					// simPrinter.println("Found Other Dog Thats Not Ours");
+    	}
+    	for(Owner otherOwner : otherOwners) {
+    		for(Dog dog : otherOwner.getDogs()) {
+				if(dog.isWaitingForOwner(myOwner)) {
+    				waitingDogs.add(dog);
+					simPrinter.println("Found Other Dog Thats Not Ours " + dog.getOwner().getNameAsString() + " " + myOwner.getNameAsString());
+					simPrinter.println(dog.getOwner().getNameAsString());
 					count += 1;
 				}
 			}
@@ -334,7 +330,7 @@ public class Player extends dogs.sim.Player {
 		Collections.sort(dogList, new Comparator<Dog>() {
 			@Override
 			public int compare(Dog u1, Dog u2) {
-				return u1.getWaitingTimeRemaining().compareTo(u2.getWaitingTimeRemaining());
+			  return u1.getWaitingTimeRemaining().compareTo(u2.getWaitingTimeRemaining());
 			}
 		});
 		// for(Dog d: dogList){
