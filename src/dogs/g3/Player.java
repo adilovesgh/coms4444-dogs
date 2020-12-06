@@ -10,6 +10,7 @@ import javax.swing.plaf.synth.SynthSeparatorUI;
 
 import dogs.sim.Directive;
 import dogs.sim.Directive.Instruction;
+import dogs.sim.DogReference.Breed;
 import dogs.sim.Dictionary;
 import dogs.sim.Dog;
 import dogs.sim.Owner;
@@ -55,13 +56,13 @@ public class Player extends dogs.sim.Player {
 	private HashMap<String, ParkLocation> mapOwnerToParkLocationCircle(List<Owner> owners, ParkLocation center,
 			int radius) {
 		HashMap<String, ParkLocation> ownerToLocation = new HashMap<String, ParkLocation>();
-		if (this.graph.graphType == GraphType.GRID) {
+		if (this.graph != null && this.graph.graphType == GraphType.GRID) {
 
 		} else {
 			for (int i = 0; i < owners.size(); i++) {
 				Owner current = owners.get(i);
-				double x = center.getRow() + radius * Math.cos((2 * Math.PI * i) / owners.size());
-				double y = center.getColumn() + radius * Math.sin((2 * Math.PI * i) / owners.size());
+				double x = center.getRow() + radius * Math.cos((2 * Math.PI * i) / owners.size() + Math.PI/4 );
+				double y = center.getColumn() + radius * Math.sin((2 * Math.PI * i) / owners.size()  + Math.PI/4);
 				ownerToLocation.put(current.getNameAsString(), new ParkLocation(x, y));
 			}
 		}
@@ -76,10 +77,12 @@ public class Player extends dogs.sim.Player {
 	private PlayerGraph buildPlayerGraph(List<Owner> owners) {
 
 		PlayerGraph graph = new PlayerGraph(owners);
+		// simPrinter.println(owners.size());
 		// add an edge between each pair of owners within 40 meters of each other
 		for (Owner o1 : owners) {
 			for (Owner o2 : owners) {
-				if ((o1.getNameAsEnum() != o2.getNameAsEnum()) && (distanceBetweenOwners(o1, o2) <= 40.0)) {
+				simPrinter.println(desiredDistanceBetweenOwners(o1, o2));
+				if ((o1.getNameAsEnum() != o2.getNameAsEnum()) && (desiredDistanceBetweenOwners(o1, o2) <= 40.0)) {
 					graph.addConnection(o1, o2);
 				}
 			}
@@ -99,6 +102,25 @@ public class Player extends dogs.sim.Player {
 		double y_difference_normalized = y_difference / distance;
 		return new ParkLocation(currentLocation.getRow() + x_difference_normalized * 2,
 				currentLocation.getColumn() + y_difference_normalized * 2);
+	}
+
+	private ParkLocation getAdjustedPath(ParkLocation currentLocation, ParkLocation nextLocation, Dog dog) {
+		double currentAngle = Math.atan2((nextLocation.getRow() - currentLocation.getRow()), (nextLocation.getColumn() - currentLocation.getColumn()));
+		double radius = distanceBetweenLocs(currentLocation, nextLocation);
+		int offset = 0; 
+		switch(dog.getBreed()) {
+			case LABRADOR:
+				offset = 20;
+			case POODLE: 
+				offset = 15;
+			case SPANIEL:
+				offset = 10; 
+			default: 
+				offset = 5;
+		}
+		double x = currentLocation.getColumn() + radius * Math.cos(currentAngle + offset*0.017);
+		double y = currentLocation.getRow() + radius * Math.sin(currentAngle + offset*0.017);
+		return new ParkLocation(y, x);
 	}
 
 	/**
@@ -133,11 +155,57 @@ public class Player extends dogs.sim.Player {
 				this.otherInstances = getOtherInstancesSignals(allOwners);
 				// System.out.println(this.otherInstances.size());
 				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(this.otherInstances);
+				List<Owner> temp = new LinkedList<Owner>();
+				temp.addAll(alphabeticalOwners);
 				double radius = 40 * (this.otherInstances.size() - 1);
 				radius /= (double) (2.0 * Math.PI);
 				// System.out.println(radius + " " + allOwners.size());
-				radius = 20;
-				this.graph = buildPlayerGraph(alphabeticalOwners);
+				radius = 19;
+
+				HashMap<String, ParkLocation> currentPositions = new HashMap<String, ParkLocation>();
+
+				int unassignedOwners = alphabeticalOwners.size();
+				int preferredGroupSize = 4; 
+				int minGroupSize = 3;
+				double rowLocation = 25.0;
+				double colLocation = 25.0; 
+				int row = 1;
+				int col = 1; 
+
+
+				while (unassignedOwners >= minGroupSize) {
+					// simPrinter.println("Iteration");
+					// simPrinter.println(unassignedOwners);
+					List<Owner> currentRound = new LinkedList<Owner>();
+					
+					int limit = preferredGroupSize;
+					if (unassignedOwners - preferredGroupSize < minGroupSize) {
+						limit = unassignedOwners;
+					}
+				
+					for (int i=0; i < limit && unassignedOwners > 0; i++) {
+						currentRound.add(alphabeticalOwners.get(0));
+						alphabeticalOwners.remove(0);
+						unassignedOwners -= 1; 
+					}
+					// simPrinter.println("coordinates");
+					// simPrinter.println(rowLocation);
+					// simPrinter.println(colLocation);
+					HashMap<String, ParkLocation> tempPositions = mapOwnerToParkLocationCircle(currentRound, new ParkLocation(rowLocation, colLocation), (int) radius);
+					currentPositions.putAll(tempPositions);
+					rowLocation += 3*radius;
+					if (rowLocation > 200) {
+						rowLocation = 25; 
+						colLocation += 3*radius; 
+					}
+				}
+				if (unassignedOwners > 0){
+					currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners,
+					new ParkLocation(25.0, 25.0), (int) radius);
+				}
+
+				this.positions = currentPositions;
+				this.graph = buildPlayerGraph(temp);
 				this.graph.graphType = this.graph.getGraphType(this.otherInstances);
 				// if(this.graph.graphType == GraphType.SPOKE){
 				// numCenterPlayers = (int) Math.ceil((double) radius / 51.0);
@@ -146,10 +214,8 @@ public class Player extends dogs.sim.Player {
 				// }
 				this.center = new ParkLocation(25.0, 25.0);
 				this.radius = (int) radius;
-				HashMap<String, ParkLocation> currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners,
-						new ParkLocation(25.0, 25.0), (int) radius);
-				this.positions = currentPositions;
-				simPrinter.println("calling signal...");
+
+
 				directive.instruction = Instruction.CALL_SIGNAL;
 				directive.signalWord = this.identification_signal;
 				return directive;
@@ -171,7 +237,7 @@ public class Player extends dogs.sim.Player {
 					}
 				}
 
-				if (dist > 30) {
+				if (dist > 30 && myOwnerInstances.size() > 6) {
 					this.center = new ParkLocation(nearest.getLocation().getRow() - 45,
 							nearest.getLocation().getColumn());
 					this.positions = mapOwnerToParkLocationCircle(sortOwnersAlphabetically(this.otherInstances),
@@ -230,6 +296,10 @@ public class Player extends dogs.sim.Player {
 			if (!sortedDogs.isEmpty()) {
 				directive.instruction = Instruction.THROW_BALL;
 				directive.dogToPlayWith = sortedDogs.get(0);
+				if (sortedDogs.get(0).getWaitingTimeRemaining() > 19) {
+					List<Dog> sortedExerciseDogs = sortDogs(waitingDogs);
+					directive.dogToPlayWith = sortedExerciseDogs.get(0);
+				}
 				List<OwnerName> neighborNames = this.graph.getConnections(myOwner);
 
 				// throw the ball toward the least occupied neighbor
@@ -246,6 +316,7 @@ public class Player extends dogs.sim.Player {
 					return throwRandomly();
 				}
 				OwnerName throwToOwnerName = requiredOwner.getNameAsEnum();
+				simPrinter.println("Throwing To " + throwToOwnerName + "round " + round);
 
 				/*
 				 * Owner requiredOwner = null; for (Owner throwOwner: this.otherOwners) { if
@@ -255,11 +326,14 @@ public class Player extends dogs.sim.Player {
 
 				Double ballRow = requiredOwner.getLocation().getRow();
 				Double ballColumn = requiredOwner.getLocation().getColumn();
+				ParkLocation location = getAdjustedPath(myOwner.getLocation(), requiredOwner.getLocation(), directive.dogToPlayWith);
+				simPrinter.println(ballRow + " " + location.getRow());
+				simPrinter.println(ballColumn + " " + location.getColumn());
 				Random r = new Random();
 				count += 1;
 				// simPrinter.println(myOwner.getNameAsString() + " " + sortedDogs.size());
 				// simPrinter.println(throwToOwnerName + " from " + myOwner.getNameAsString());
-				directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+				directive.parkLocation = new ParkLocation(location.getRow(), location.getColumn());
 				return directive;
 			}
 
@@ -305,8 +379,8 @@ public class Player extends dogs.sim.Player {
     		for(Dog dog : otherOwner.getDogs()) {
 				if(dog.isWaitingForOwner(myOwner)) {
     				waitingDogs.add(dog);
-					simPrinter.println("Found Other Dog Thats Not Ours " + dog.getOwner().getNameAsString() + " " + myOwner.getNameAsString());
-					simPrinter.println(dog.getOwner().getNameAsString());
+					// simPrinter.println("Found Other Dog Thats Not Ours " + dog.getOwner().getNameAsString() + " " + myOwner.getNameAsString());
+					// simPrinter.println(dog.getOwner().getNameAsString());
 					count += 1;
 				}
 			}
@@ -375,6 +449,11 @@ public class Player extends dogs.sim.Player {
 	// calculate the distance between two owners
 	private Double distanceBetweenOwners(Owner u1, Owner u2) {
 		Double dist = distanceBetweenLocs(u1.getLocation(), u2.getLocation());
+		return dist;
+	}
+
+	private Double desiredDistanceBetweenOwners(Owner u1, Owner u2) {
+		Double dist = distanceBetweenLocs(this.positions.get(u1.getNameAsString()), this.positions.get(u2.getNameAsString()));
 		return dist;
 	}
 
