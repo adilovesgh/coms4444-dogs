@@ -223,12 +223,9 @@ public class Player extends dogs.sim.Player {
                 if (getDist(owner.getLocation(), myLocation) < minDist) nextVertice = owner;
             }
 
-            
         }
 
         return nextVertice.getLocation();
-
-        
 
     }
 
@@ -455,6 +452,24 @@ public class Player extends dogs.sim.Player {
 
         return circularLocations;
     }
+
+    //check for validity
+	boolean isLocationValid(ParkLocation location){
+		Double r1 = location.getRow();
+		Double c1 = location.getColumn();
+
+		r1 = Math.max(0.0, r1);
+		c1 = Math.max(0.0, c1);
+        
+        if(r1==Math.min(ParkLocation.PARK_SIZE - 1, r1) && c1== Math.min(ParkLocation.PARK_SIZE - 1, c1))
+        {
+            return true;
+        }
+        else{
+            return false;
+        }
+
+	}
 
     private List<String> getOtherOwnersSignals(List<Owner> otherOwners) {
         List<String> otherOwnersSignals = new ArrayList<>();
