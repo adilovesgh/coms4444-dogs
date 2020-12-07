@@ -222,7 +222,11 @@ public class Player extends dogs.sim.Player {
             if (!owner.getLocationAsString().equals(myLocation.toString())) {
                 if (getDist(owner.getLocation(), myLocation) < minDist) nextVertice = owner;
             }
+
+            
         }
+
+        return nextVertice.getLocation();
 
         
 
