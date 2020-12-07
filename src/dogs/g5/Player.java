@@ -18,6 +18,7 @@ public class Player extends dogs.sim.Player {
 	private final String OUR_TEAM_SIGNAL = "Zyzzogeton";
 	private final String IN_POSITION_SIGNAL = "positron";
 	private final String READY_THROW_SIGNAL = "throwster";
+	private final String SEPARATE_DOGS_SIGNAL = "separate";
 
 	private final String[] OTHER_TEAM_NAMES = {"papaya","two","three","zythum","Zyzzogeton"};
 	
@@ -38,13 +39,14 @@ public class Player extends dogs.sim.Player {
 	private Integer cloneOrder = 0;
 	private Double targetRow = 0.0;
 	private Double targetColumn = 0.0;
+	private boolean threeCollabEngaged = false;
 
-	private List<String> clonesPresent = new ArrayList<>();
-	private List<String> throwingPartners = new ArrayList<>();
-	private List<String> currentPartners = new ArrayList<>();
+	private List<String> clonesPresent = new ArrayList<>();		//List of simNames
+	private List<String> throwingPartners = new ArrayList<>();	//List of who we will throw to
+	private List<String> currentPartners = new ArrayList<>();	//Who we are currently throwing to
 	
-	private Map<String, String> teamsPresent = new HashMap<>();
-	private Map<String, List<String>> signalLog = new HashMap<>();
+	private Map<String, String> teamsPresent = new HashMap<>();	// SimName, Team Name
+	private Map<String, List<String>> signalLog = new HashMap<>();	// Signal, list of SimNames
 	private Map<Integer, HashMap<String, String>> conversationHistory = new HashMap<>();
 
 
@@ -89,7 +91,7 @@ public class Player extends dogs.sim.Player {
 				state = State.MOVING;
 
 			case MOVING:
-				if(atTarget(myOwner)) {
+				if(notAtTarget(myOwner)) {
 					setMoveLocation(myOwner, directive);
 
 				} else {
@@ -102,17 +104,35 @@ public class Player extends dogs.sim.Player {
 				simPrinter.println(myOwner.getNameAsString() + "'s THROWING PARTNERS JA: " + throwingPartners);
 				simPrinter.println(myOwner.getNameAsString() + "'s CURRENT PARTNERS JA: " + currentPartners);
 				directive.instruction = Instruction.CALL_SIGNAL;
-				directive.signalWord = IN_POSITION_SIGNAL;
+				if (cloneOrder == 4 && threeCollabPossible()){
+					directive.signalWord = SEPARATE_DOGS_SIGNAL;
+					break;
+				}
+				else
+					directive.signalWord = IN_POSITION_SIGNAL;
 				checkClonePartnersStatus(State.SELF_THROWING);
 				break;
 
 			case PAIR_THROWING:
 				simPrinter.println(myOwner.getNameAsString() + "'s THROWING PARTNERS PT: " + throwingPartners);
 				simPrinter.println(myOwner.getNameAsString() + "'s CURRENT PARTNERS PT: " + currentPartners);
-				checkClonePartnersStatus(State.PAIR_THROWING);
+				
+				if (threeCollabEngaged && threeReady())
+					state = State.THREE_SEPARATE;
+				else
+					checkClonePartnersStatus(State.PAIR_THROWING);
+
 				if(waitingDogs.size() > 0)
 					setThrowLocation(directive, waitingDogs, myOwner, pickReceivingClone(otherOwners));
 				break;
+
+			case THREE_SEPARATE:
+				if(waitingDogs.size() > 0){
+					setThrowLocation(directive, waitingDogs, myOwner, pickReceivingClone(otherOwners));
+					separateDogs(directive, getThreeOwner(otherOwners));
+				}
+				break;
+
 
 			case SELF_THROWING:
 				simPrinter.println(myOwner.getNameAsString() + "'s THROWING PARTNERS ST: " + throwingPartners);
@@ -193,69 +213,76 @@ public class Player extends dogs.sim.Player {
 		locations.add(initialPoint);
 		locations.add(secondRowBase);
 
+		boolean extraLevels = false;
+		int level = 3;
+		int currInd = 0;
+
 		//generate the other n-2 points
 		if (numNodes > 0){
 			for(int i = 0; i < numNodes - 2; i++) {
 				//every other one should be first column
 				double rowOffset = (Math.floorDiv(i,2)+1)*CLONE_DISTANCE;
 
+				//check if past the size of the field
+				if(i%2 == 0 && (row + rowOffset) >= 200) {
+					extraLevels = true;
+				}
+
+				if(i%2 == 1 && (rowBase2 + rowOffset) >= 200) {
+					extraLevels = true;
+				}
+
 				List<Double> nextPoint = new ArrayList<>();
 
-				if(i%2 == 0) {
-					nextPoint.add(row + rowOffset);
-					nextPoint.add(column);
+
+				//if not, add normally
+				if(!extraLevels) {
+
+					if(i%2 == 0) {
+						nextPoint.add(row + rowOffset);
+						nextPoint.add(column);
+					}
+					else {
+						nextPoint.add(rowBase2 + rowOffset);
+						nextPoint.add(colBase2);
+					}
+					locations.add(nextPoint);
 				}
+				//if so, add to the current extra row
 				else {
-					nextPoint.add(rowBase2 + rowOffset);
-					nextPoint.add(colBase2);
+					double newOffset = currInd*CLONE_DISTANCE;
+					double newRow = newOffset + row;
+
+					//if even level
+					if(level % 2 == 0) {
+						newRow += CLONE_DISTANCE/2;
+					}
+
+					double colOffset = (level-1)*(CLONE_DISTANCE/2)*Math.tan(Math.toRadians(60.0));
+					double newCol = colOffset + column;
+
+					//transition to new row
+					if(newRow >= 200) {
+						currInd = 0;
+						level++;
+						i--;
+					}
+					else {
+						nextPoint.add(newRow);
+						nextPoint.add(newCol);
+
+						locations.add(nextPoint);
+						currInd++;
+					}
+
 				}
-				locations.add(nextPoint);
 			}
 		}
 
 		return locations;
 	}
 
-	private List<Double> findLocation() {
-		List<Double> coordinates = new ArrayList<>();
-
-		double colVal = 100.0;
-		double rowVal = 100.0;
-
-
-		double varColOffset = random.nextInt(5000)/100.0 + 25;
-		double varRowOffset = random.nextInt(5000)/100.0 + 25;
-
-		if(random.nextInt(2) == 0) {
-			colVal += varColOffset;
-
-			if(random.nextInt(2) == 1) {
-				rowVal += varRowOffset;
-			}
-			else {
-				rowVal -= varRowOffset;
-			}
-
-		}
-		else {
-			rowVal += varRowOffset;
-
-			if(random.nextInt(2) == 1) {
-				colVal += varColOffset;
-			}
-			else {
-				colVal -= varColOffset;
-			}
-
-		}
-
-		coordinates.add(rowVal);
-		coordinates.add(colVal);
-
-		return coordinates;
-	}
-
-	private boolean atTarget(Owner myOwner){
+	private boolean notAtTarget(Owner myOwner){
 		return (myOwner.getLocation().getColumn() < targetColumn || myOwner.getLocation().getRow() < targetRow);
 	}
 
@@ -270,6 +297,27 @@ public class Player extends dogs.sim.Player {
 		directive.parkLocation.setRow(myOwner.getLocation().getRow() + scaledRow);
 		directive.parkLocation.setColumn(myOwner.getLocation().getColumn() + scaledCol);
 		directive.instruction = Instruction.MOVE;
+	}
+
+	private boolean threeCollabPossible(){
+		if (teamsPresent.values().contains("three") && !threeCollabEngaged){
+			threeCollabEngaged = true;
+			return true;
+		}
+		return false;
+	}
+
+	private boolean threeReady(){
+		if (signalLog.get(SEPARATE_DOGS_SIGNAL).contains("three"))
+			return true;
+		return false; 
+	}
+
+	private Owner getThreeOwner(List<Owner> otherOwners){
+		for (Owner owner : otherOwners)
+			if (owner.getNameAsString().equals(signalLog.get(SEPARATE_DOGS_SIGNAL).get(0)))
+				return owner;
+		return pickReceivingClone(otherOwners);
 	}
 
 	private void stopMoving(Directive directive){
@@ -387,6 +435,17 @@ public class Player extends dogs.sim.Player {
 			ballColumn = ParkLocation.PARK_SIZE - 1;
 
 		directive.parkLocation = new ParkLocation(ballRow, ballColumn);
+	}
+
+	private void separateDogs(Directive directive, Owner threeOwner){
+		switch (directive.dogToPlayWith.getBreed()){
+			case SPANIEL:
+			case TERRIER:
+				directive.parkLocation = threeOwner.getLocation();
+				break;
+			default:
+				return;
+		}
 	}
 
 	private void throwToSelf(Directive directive, Owner myOwner, List<Dog> waitingDogs){
@@ -535,12 +594,10 @@ public class Player extends dogs.sim.Player {
 		}
 		for(Owner owner : otherOwners){
 			if (!owner.getCurrentSignal().equals("_")){
-				if (teamsPresent.containsKey(owner.getNameAsString())){
+				if (teamsPresent.containsKey(owner.getNameAsString()))
 					conversationHistory.get(round).put(owner.getNameAsString(), owner.getCurrentSignal());
-				}
-				if (clonesPresent.contains(owner.getNameAsString())) {
+				if (signalLog.get(owner.getCurrentSignal()) != null)
 					signalLog.get(owner.getCurrentSignal()).add(owner.getNameAsString());
-				}
 			}
 		}
 	}
@@ -549,6 +606,7 @@ public class Player extends dogs.sim.Player {
 		signalLog.put(OUR_TEAM_SIGNAL, new ArrayList<>());
 		signalLog.put(IN_POSITION_SIGNAL, new ArrayList<>());
 		signalLog.put(READY_THROW_SIGNAL, new ArrayList<>());
+		signalLog.put(SEPARATE_DOGS_SIGNAL, new ArrayList<>());
 	}
 
 	private void setCloneOrder(Owner myOwner){
@@ -580,9 +638,8 @@ public class Player extends dogs.sim.Player {
 		FIRST_MOVE,
 		MOVING,
 		JUST_ARRIVED,
-		JOINING_PARTNERS,
 		SELF_THROWING,
 		PAIR_THROWING,
-		TRIO_THROWING;
+		THREE_SEPARATE;
 	}
 }
