@@ -193,66 +193,73 @@ public class Player extends dogs.sim.Player {
 		locations.add(initialPoint);
 		locations.add(secondRowBase);
 
+		boolean extraLevels = false;
+		int level = 3;
+		int currInd = 0;
+
 		//generate the other n-2 points
 		if (numNodes > 0){
 			for(int i = 0; i < numNodes - 2; i++) {
 				//every other one should be first column
 				double rowOffset = (Math.floorDiv(i,2)+1)*CLONE_DISTANCE;
 
+				//check if past the size of the field
+				if(i%2 == 0 && (row + rowOffset) >= 200) {
+					extraLevels = true;
+				}
+
+				if(i%2 == 1 && (rowBase2 + rowOffset) >= 200) {
+					extraLevels = true;
+				}
+
 				List<Double> nextPoint = new ArrayList<>();
 
-				if(i%2 == 0) {
-					nextPoint.add(row + rowOffset);
-					nextPoint.add(column);
+
+				//if not, add normally
+				if(!extraLevels) {
+
+					if(i%2 == 0) {
+						nextPoint.add(row + rowOffset);
+						nextPoint.add(column);
+					}
+					else {
+						nextPoint.add(rowBase2 + rowOffset);
+						nextPoint.add(colBase2);
+					}
+					locations.add(nextPoint);
 				}
+				//if so, add to the current extra row
 				else {
-					nextPoint.add(rowBase2 + rowOffset);
-					nextPoint.add(colBase2);
+					double newOffset = currInd*CLONE_DISTANCE;
+					double newRow = newOffset + row;
+
+					//if even level
+					if(level % 2 == 0) {
+						newRow += CLONE_DISTANCE/2;
+					}
+
+					double colOffset = (level-1)*(CLONE_DISTANCE/2)*Math.tan(Math.toRadians(60.0));
+					double newCol = colOffset + column;
+
+					//transition to new row
+					if(newRow >= 200) {
+						currInd = 0;
+						level++;
+						i--;
+					}
+					else {
+						nextPoint.add(newRow);
+						nextPoint.add(newCol);
+
+						locations.add(nextPoint);
+						currInd++;
+					}
+
 				}
-				locations.add(nextPoint);
 			}
 		}
 
 		return locations;
-	}
-
-	private List<Double> findLocation() {
-		List<Double> coordinates = new ArrayList<>();
-
-		double colVal = 100.0;
-		double rowVal = 100.0;
-
-
-		double varColOffset = random.nextInt(5000)/100.0 + 25;
-		double varRowOffset = random.nextInt(5000)/100.0 + 25;
-
-		if(random.nextInt(2) == 0) {
-			colVal += varColOffset;
-
-			if(random.nextInt(2) == 1) {
-				rowVal += varRowOffset;
-			}
-			else {
-				rowVal -= varRowOffset;
-			}
-
-		}
-		else {
-			rowVal += varRowOffset;
-
-			if(random.nextInt(2) == 1) {
-				colVal += varColOffset;
-			}
-			else {
-				colVal -= varColOffset;
-			}
-
-		}
-
-		coordinates.add(rowVal);
-		coordinates.add(colVal);
-
-		return coordinates;
 	}
 
 	private boolean atTarget(Owner myOwner){
