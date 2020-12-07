@@ -101,8 +101,8 @@ public class Player extends dogs.sim.Player {
 				break;
 
 			case JUST_ARRIVED:
-				simPrinter.println(myOwner.getNameAsString() + "'s THROWING PARTNERS JA: " + throwingPartners);
-				simPrinter.println(myOwner.getNameAsString() + "'s CURRENT PARTNERS JA: " + currentPartners);
+		
+		
 				directive.instruction = Instruction.CALL_SIGNAL;
 
 				if (cloneOrder == 4 && threeCollabPossible()){
@@ -110,9 +110,9 @@ public class Player extends dogs.sim.Player {
 					break;
 				}
 
-				else if (checkNewRow(myOwner, otherOwners)) {
+				/*else if (checkNewRow(myOwner, otherOwners)) {
 					state = State.NEW_ROW_THROWING;
-				}
+				}*/
 
 				else {
 					checkClonePartnersStatus(State.SELF_THROWING);
@@ -125,9 +125,6 @@ public class Player extends dogs.sim.Player {
 				break;
 
 			case PAIR_THROWING:
-				simPrinter.println(myOwner.getNameAsString() + "'s THROWING PARTNERS PT: " + throwingPartners);
-				simPrinter.println(myOwner.getNameAsString() + "'s CURRENT PARTNERS PT: " + currentPartners);
-				
 				if (threeCollabEngaged && threeReady())
 					state = State.THREE_SEPARATE;
 				else
@@ -138,6 +135,7 @@ public class Player extends dogs.sim.Player {
 				break;
 
 			case THREE_SEPARATE:
+				simPrinter.println("HERE********");
 				if(waitingDogs.size() > 0){
 					setThrowLocation(directive, waitingDogs, myOwner, pickReceivingClone(otherOwners));
 					separateDogs(directive, getThreeOwner(otherOwners));
@@ -146,8 +144,8 @@ public class Player extends dogs.sim.Player {
 
 
 			case SELF_THROWING:
-				simPrinter.println(myOwner.getNameAsString() + "'s THROWING PARTNERS ST: " + throwingPartners);
-				simPrinter.println(myOwner.getNameAsString() + "'s CURRENT PARTNERS ST: " + currentPartners);
+		
+		
 				checkClonePartnersStatus(State.SELF_THROWING);
 				if(waitingDogs.size() > 0)
 					throwToSelf(directive, myOwner, waitingDogs);
@@ -212,7 +210,7 @@ public class Player extends dogs.sim.Player {
 					throwingPartners.add(clonesPresent.get(cloneOrder - 3));
 		}
 		Collections.sort(throwingPartners);
-		simPrinter.println(myOwner.getNameAsString() +"'s THPTNERS (BUILDLIST):" + throwingPartners + " CLONE ORDER: " + cloneOrder); 
+
 	}
 
 	private void setTargetLocation(){
@@ -347,7 +345,7 @@ public class Player extends dogs.sim.Player {
 	}
 
 	private boolean threeReady(){
-		if (signalLog.get(SEPARATE_DOGS_SIGNAL).contains("three"))
+		if (signalLog.get(SEPARATE_DOGS_SIGNAL).contains("Frank"))
 			return true;
 		return false; 
 	}
@@ -635,8 +633,11 @@ public class Player extends dogs.sim.Player {
 			if (!owner.getCurrentSignal().equals("_")){
 				if (teamsPresent.containsKey(owner.getNameAsString()))
 					conversationHistory.get(round).put(owner.getNameAsString(), owner.getCurrentSignal());
-				if (signalLog.get(owner.getCurrentSignal()) != null)
+				if (signalLog.get(owner.getCurrentSignal()) != null){
+					simPrinter.println("OWNER: " + myOwner.getNameAsString());
+					simPrinter.println("ADDING: " + owner.getNameAsString() + "'s SIGNAL: " + owner.getCurrentSignal());
 					signalLog.get(owner.getCurrentSignal()).add(owner.getNameAsString());
+				}
 			}
 		}
 	}
