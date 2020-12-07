@@ -137,6 +137,7 @@ public class Player extends dogs.sim.Player {
 	public Directive chooseDirective(Integer round, Owner myOwner, List<Owner> otherOwners) {
 		this.round = round;
 		this.myDogs = myOwner.getDogs();
+		this.myDogs = getExercisingDogs(myOwner, this.myDogs);
 		this.allDogs = getAllDogs(myOwner, otherOwners);
 		this.otherOwners = otherOwners;
 		this.myOwner = myOwner;
@@ -158,9 +159,10 @@ public class Player extends dogs.sim.Player {
 				//System.out.println(this.otherInstances.toString());
 				for (Owner o : this.otherInstances) {
 					if (this.otherOwners.contains(o)) {
-						this.otherOwners.remove(o);
+						this.otherOwners.remove(o); //remove other instances of group 3 from otherOwners
 					}
 				}
+
 				// System.out.println(this.otherInstances.size());
 				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(this.otherInstances);
 				List<Owner> temp = new LinkedList<Owner>();
@@ -291,6 +293,7 @@ public class Player extends dogs.sim.Player {
 
 			// get waiting dogs and separate into others' dogs and my own dogs
 			List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
+			waitingDogs = getExercisingDogs(myOwner, waitingDogs);
 			List<Dog> notOwnedByMe = new ArrayList<Dog>();
 			List<Dog> ownedByMe = new ArrayList<Dog>();
 			for (Dog dog : waitingDogs) {
@@ -381,6 +384,7 @@ public class Player extends dogs.sim.Player {
 		return otherOwnersSignals;
 	}
 
+	//get other instances of group 3
 	private List<Owner> getOtherInstancesSignals(List<Owner> otherOwners) {
 		List<Owner> otherInstances = new ArrayList<>();
 		for (Owner otherOwner : otherOwners) {
@@ -560,6 +564,20 @@ public class Player extends dogs.sim.Player {
 			}
 		}
 		return leastBusyOwner;
+	}
+
+	//return only the dogs with remaining exercise time > 0
+	private List<Dog> getExercisingDogs(Owner owner, List<Dog> dogs) {
+		List<Dog> exerciseIncomplete = new ArrayList<>();
+		exerciseIncomplete.addAll(dogs);
+		System.out.println(exerciseIncomplete.toString());
+		for (Dog d : dogs) {
+			if (d.getOwner() == owner && d.getExerciseTimeRemaining() == 0.0) {
+				exerciseIncomplete.remove(d);
+			}
+		}
+		System.out.println(exerciseIncomplete.toString());
+		return exerciseIncomplete;
 	}
 
 	/**
