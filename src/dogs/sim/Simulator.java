@@ -55,7 +55,7 @@ public class Simulator {
 
 	// Defaults
 	private static double dataError = 1e-7;
-	private static boolean enablePrints = true;
+	private static boolean enablePrints = false;
 	private static long timeout = 1000;
 	private static int currentStep = 0;
 	private static String version = "1.0";
