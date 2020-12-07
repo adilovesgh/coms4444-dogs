@@ -42,7 +42,7 @@ public class PlayerGraph {
         return graphType;
     }
 
-    private void addNode(Owner owner) {
+    public void addNode(Owner owner) {
         PlayerNode node = new PlayerNode(owner);
         this.owners.put(owner.getNameAsEnum(), node);
     } 
