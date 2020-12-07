@@ -184,7 +184,7 @@ public class Player extends dogs.sim.Player {
             }
         }
         else {
-            this.allLocationMap = getCircularLocations(200, 200, myOwner, 39.0, false, 10.0);
+            this.allLocationMap = getCircularLocations(200, 200, myOwner, 39.0, true, 10.0);
             ParkLocation finalLocation = this.allLocationMap.get(myOwner).location;
             //updateDistances(otherOwners, myOwner);
 
@@ -453,7 +453,7 @@ public class Player extends dogs.sim.Player {
         if (centralized) maxRadius = Math.min(ySize, xSize)/2.0;
         else maxRadius = radius + margin;
 
-        if (maxRadius >= Math.min(ySize/2, xSize/2)) {
+        if (maxRadius >= Math.min(ySize/2, xSize/2) && !centralized) {
             maxRadius = 1.0*Math.min(ySize/2, xSize/2);
             radius = maxRadius - margin;
         }
