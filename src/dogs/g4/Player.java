@@ -95,7 +95,6 @@ public class Player extends dogs.sim.Player {
 
         updateOwnersList(otherOwners);
 
-        // Determine position of our own instances
         if (this.coOwners.isEmpty() && this.g1Owners.size() <= 1) {
             ParkLocation center = new ParkLocation(100.0, 100.0);
             if (center.getRow().intValue() != myOwner.getLocation().getRow().intValue() ||
@@ -249,36 +248,12 @@ public class Player extends dogs.sim.Player {
         Double x = v1.getRow()+d1*Math.cos(phi1-phi2);
         Double y = v1.getColumn()+d1*Math.sin(phi1-phi2);
 
-<<<<<<< HEAD
         if (x < 0 || y < 0) {
             x = v1.getRow()+d1*Math.cos(phi1+phi2);
             y = v1.getColumn()+d1*Math.sin(phi1+phi2);
         }
 
         return new ParkLocation(x, y);
-=======
-        if (group.equals("g1")) tmpOwners = this.g1Owners;
-        else if (group.equals("g2")) tmpOwners = this.g2Owners;
-        else if (group.equals("g3")) tmpOwners = this.g3Owners;
-        else if (group.equals("g5")) tmpOwners = this.g5Owners;
-
-        for (Owner owner : tmpOwners) {
-            if (owner.getLocationAsString().equals(myLocation.toString())) lastVertice = owner;
-            if (!owner.getLocationAsString().equals(myLocation.toString())) {
-                if (getDist(owner.getLocation(), myLocation) < minDist) nextVertice = owner;
-            }
-
-        }
-
-        // this wasn't returning anything. Does this look good?
-        return getMidLocation(lastVertice.getLocation(), nextVertice.getLocation());
-
->>>>>>> ff999db54372ac5d26c1a8448adabda2d0106a6b
-    }
-
-    private ParkLocation getMidLocation(ParkLocation loc1, ParkLocation loc2) {
-        ParkLocation middleLoc = new ParkLocation((loc1.getRow()+loc2.getRow())/2, (loc2.getColumn() + loc2.getColumn())/2);
-        return middleLoc;
     }
 
     private ParkLocation getRandom40m(ParkLocation location) {
@@ -492,24 +467,6 @@ public class Player extends dogs.sim.Player {
 
         return circularLocations;
     }
-
-    //check for validity
-	boolean isLocationValid(ParkLocation location){
-		Double r1 = location.getRow();
-		Double c1 = location.getColumn();
-
-		r1 = Math.max(0.0, r1);
-		c1 = Math.max(0.0, c1);
-        
-        if(r1==Math.min(ParkLocation.PARK_SIZE - 1, r1) && c1== Math.min(ParkLocation.PARK_SIZE - 1, c1))
-        {
-            return true;
-        }
-        else{
-            return false;
-        }
-
-	}
 
     private List<String> getOtherOwnersSignals(List<Owner> otherOwners) {
         List<String> otherOwnersSignals = new ArrayList<>();
