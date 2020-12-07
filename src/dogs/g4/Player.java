@@ -94,6 +94,7 @@ public class Player extends dogs.sim.Player {
 
         updateOwnersList(otherOwners);
 
+        // Determine position of our own instances
         if (this.coOwners.isEmpty() && this.g1Owners.size() <= 1) {
             ParkLocation center = new ParkLocation(100.0, 100.0);
             if (center.getRow().intValue() != myOwner.getLocation().getRow().intValue() ||
@@ -225,8 +226,14 @@ public class Player extends dogs.sim.Player {
 
         }
 
-        return nextVertice.getLocation();
+        // this wasn't returning anything. Does this look good?
+        return getMidLocation(lastVertice.getLocation(), nextVertice.getLocation());
 
+    }
+
+    private ParkLocation getMidLocation(ParkLocation loc1, ParkLocation loc2) {
+        ParkLocation middleLoc = new ParkLocation((loc1.getRow()+loc2.getRow())/2, (loc2.getColumn() + loc2.getColumn())/2);
+        return middleLoc;
     }
 
     private ParkLocation getRandom40m(ParkLocation location) {
