@@ -104,13 +104,24 @@ public class Player extends dogs.sim.Player {
 				simPrinter.println(myOwner.getNameAsString() + "'s THROWING PARTNERS JA: " + throwingPartners);
 				simPrinter.println(myOwner.getNameAsString() + "'s CURRENT PARTNERS JA: " + currentPartners);
 				directive.instruction = Instruction.CALL_SIGNAL;
+
 				if (cloneOrder == 4 && threeCollabPossible()){
 					directive.signalWord = SEPARATE_DOGS_SIGNAL;
 					break;
 				}
-				else
-					directive.signalWord = IN_POSITION_SIGNAL;
-				checkClonePartnersStatus(State.SELF_THROWING);
+
+				else if (checkNewRow(myOwner, otherOwners)) {
+					state = State.NEW_ROW_THROWING;
+				}
+
+				else {
+					checkClonePartnersStatus(State.SELF_THROWING);
+				}
+				directive.signalWord = IN_POSITION_SIGNAL;
+				break;
+
+			case NEW_ROW_THROWING:
+				setThrowLocation(directive, waitingDogs, myOwner, receiverInLoop(myOwner, otherOwners));
 				break;
 
 			case PAIR_THROWING:
@@ -148,6 +159,34 @@ public class Player extends dogs.sim.Player {
 		return directive;
 	}
 
+	private boolean checkNewRow(Owner myOwner, List<Owner> otherOwners){
+		List<String> ownerNames = new ArrayList<String>();
+		ownerNames.add(myOwner.getNameAsString());
+		for (Owner owner : otherOwners) {
+			ownerNames.add(owner.getNameAsString());
+		}
+		Collections.sort(ownerNames);
+		if (ownerNames.indexOf(myOwner.getNameAsString()) == super.numOwners - 1 ){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+
+	private Owner receiverInLoop(Owner myOwner, List<Owner> otherOwners){
+		List<String> ownerNames = new ArrayList<String>();
+		HashMap<String, Owner> ownerNameMap = new HashMap<String, Owner>();
+		ownerNames.add(myOwner.getNameAsString());
+		for (Owner owner : otherOwners) {
+			ownerNames.add(owner.getNameAsString());
+			ownerNameMap.put(owner.getNameAsString(), owner);
+		}
+		Collections.sort(ownerNames);
+		String targetOwner = ownerNames.get(ownerNames.indexOf(myOwner.getNameAsString()) - 8);
+		return ownerNameMap.get(targetOwner);
+	}
+
 	private void buildPlayerLists(Owner myOwner, List<Owner> otherOwners){
 		for (Owner owner : otherOwners){
 			if (Arrays.asList(OTHER_TEAM_NAMES).contains(owner.getCurrentSignal()))
@@ -173,7 +212,7 @@ public class Player extends dogs.sim.Player {
 					throwingPartners.add(clonesPresent.get(cloneOrder - 3));
 		}
 		Collections.sort(throwingPartners);
-		simPrinter.println(myOwner.getNameAsString() +"'s THPTNERS (BUILDLIST):" + throwingPartners + " CLONE orDER: " + cloneOrder); 
+		simPrinter.println(myOwner.getNameAsString() +"'s THPTNERS (BUILDLIST):" + throwingPartners + " CLONE ORDER: " + cloneOrder); 
 	}
 
 	private void setTargetLocation(){
@@ -638,6 +677,7 @@ public class Player extends dogs.sim.Player {
 		FIRST_MOVE,
 		MOVING,
 		JUST_ARRIVED,
+		NEW_ROW_THROWING,
 		SELF_THROWING,
 		PAIR_THROWING,
 		THREE_SEPARATE;
