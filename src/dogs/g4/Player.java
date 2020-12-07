@@ -3,7 +3,6 @@ package dogs.g4;
 import java.util.*;
 
 import dogs.sim.*;
-import dogs.sim.Dictionary;
 
 
 public class Player extends dogs.sim.Player {
@@ -28,8 +27,10 @@ public class Player extends dogs.sim.Player {
     private List<Owner.OwnerName> g3OwnersNames = new ArrayList<>();
     private List<Owner.OwnerName> g5OwnersNames = new ArrayList<>();
     private ParkLocation lastThrow = new ParkLocation();
+    private ParkLocation targetLocation = new ParkLocation(0.0, 0.0);
     private ParkLocation lastPosition = new ParkLocation();
     private Map<Owner, OwnerDistance> allLocationMap = new HashMap<>();
+    private Owner globalOwner = new Owner();
     private List<Owner> onlyCoopOwners = new ArrayList<>();
     private Double dividedAngle = 0.0;
     private boolean weInPosition = false;
@@ -99,7 +100,7 @@ public class Player extends dogs.sim.Player {
             if (center.getRow().intValue() != myOwner.getLocation().getRow().intValue() ||
                     center.getColumn().intValue() != myOwner.getLocation().getColumn().intValue()) {
                 myDirective.instruction = Directive.Instruction.MOVE;
-                this.lastPosition = getMyCircularNextLocation(myOwner, center);
+                this.lastPosition = getMyNextLocation(myOwner, center);
                 myDirective.parkLocation = this.lastPosition;
                 return myDirective;
             }
@@ -107,12 +108,7 @@ public class Player extends dogs.sim.Player {
             List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
 
             if (waitingDogs.size() > 0) {
-                int i = 0;
-                while (waitingDogs.get(i).getExerciseTimeRemaining() == 0.0 && myOwner.hasDog(waitingDogs.get(i))) {
-                    if (i < waitingDogs.size()) i++;
-                }
-                myDirective.dogToPlayWith = waitingDogs.get(i);
-
+                myDirective.dogToPlayWith = waitingDogs.get(0);
                 myDirective.instruction = Directive.Instruction.THROW_BALL;
                 this.lastThrow = getRandom40m(myOwner.getLocation());
                 myDirective.parkLocation = this.lastThrow;
@@ -128,20 +124,61 @@ public class Player extends dogs.sim.Player {
             }
             else {
                 List<String> g1Signals = getOtherOwnersSignals(this.g1Owners);
-                if (g1Signals.contains(this.g1FinalPosition)) this.coopInPosition = true;
+                int nReady = Collections.frequency(g1Signals, this.g1FinalPosition);
+                if (nReady >= 2 && !this.coopInPosition) {
+                    Double minDist = 200.0;
+                    for (Owner owner : g1Owners) {
+                        if (!owner.getNameAsEnum().equals(this.g1Owners.get(0).getNameAsEnum())) {
+                            if (getDist(myOwner.getLocation(), owner.getLocation()) < minDist) {
+                                minDist = getDist(myOwner.getLocation(), owner.getLocation());
+                                this.globalOwner = owner;
+                            }
+                        }
+                    }
+                    if (this.globalOwner.getCurrentSignal().equals(this.g1FinalPosition)) {
+                        this.coopInPosition = true;
+                        this.targetLocation = getThirdVertex(this.g1Owners.get(0).getLocation(), this.globalOwner.getLocation(), 39.0, 39.0);
+                    }
+                }
 
-                myDirective.instruction = Directive.Instruction.MOVE;
-                this.lastPosition = getTriangularLoc(myOwner.getLocation(), "g1");
-                if (!myOwner.getLocationAsString().equals(this.lastPosition.toString())) {
+//                simPrinter.println(this.targetLocation);
+
+                if (!myOwner.getLocationAsString().equals(this.targetLocation.toString()) && this.coopInPosition) {
+                    this.lastPosition = getMyNextLocation(myOwner, this.targetLocation);
+//                    simPrinter.println("---------------------");
+//                    simPrinter.println(myOwner.getLocation());
+//                    simPrinter.println(this.lastPosition);
+//                    simPrinter.println("---------------------");
                     myDirective.parkLocation = this.lastPosition;
                     return myDirective;
                 }
 
-                if (this.coopInPosition && round % 100 == 1) {
-                    myDirective.dogToPlayWith = getMyAvailableDog(myOwner);
-                    myDirective.instruction = Directive.Instruction.THROW_BALL;
-                    this.lastThrow = this.g1Owners.get(0).getLocation();
-                    myDirective.parkLocation = this.lastThrow;
+//                    simPrinter.println("---------------------");
+//                    simPrinter.println(g1Owners.get(0).getNameAsString());
+//                    simPrinter.println(getDist(myOwner.getLocation(), g1Owners.get(0).getLocation()));
+//                    simPrinter.println(this.globalOwner.getNameAsString());
+//                    simPrinter.println(getDist(myOwner.getLocation(), this.globalOwner.getLocation()));
+//                    simPrinter.println("---------------------");
+
+
+                if (this.coopInPosition && round % 50 == 1) {
+                    Random rand = new Random();
+                    double randomDouble = rand.nextDouble();
+
+                    if (randomDouble < 0.5) this.lastThrow = this.globalOwner.getLocation();
+                    else this.lastThrow = this.g1Owners.get(0).getLocation();
+
+                    List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
+
+                    if (waitingDogs.size() > 0) {
+                        myDirective.dogToPlayWith = waitingDogs.get(0);
+                        myDirective.instruction = Directive.Instruction.THROW_BALL;
+                        myDirective.parkLocation = this.lastThrow;
+                    }
+
+//                    myDirective.dogToPlayWith = getMyAvailableDog(myOwner);
+//                    myDirective.instruction = Directive.Instruction.THROW_BALL;
+//                    myDirective.parkLocation = this.lastThrow;
                     return myDirective;
                 }
             }
@@ -154,7 +191,7 @@ public class Player extends dogs.sim.Player {
             if (finalLocation.getRow().intValue() != myOwner.getLocation().getRow().intValue() ||
                     finalLocation.getColumn().intValue() != myOwner.getLocation().getColumn().intValue()) {
                 myDirective.instruction = Directive.Instruction.MOVE;
-                this.lastPosition = getMyCircularNextLocation(myOwner, finalLocation);
+                this.lastPosition = getMyNextLocation(myOwner, finalLocation);
                 myDirective.parkLocation = this.lastPosition;
                 return myDirective;
             }
@@ -172,21 +209,16 @@ public class Player extends dogs.sim.Player {
             }
             else if (round > numRoundsPositioning) {
                 if (waitingDogs.size() > 0) {
-                    int i = 0;
-                    while (waitingDogs.get(i).getExerciseTimeRemaining() == 0.0 && myOwner.hasDog(waitingDogs.get(i))) {
-                        if (i < waitingDogs.size()) i++;
-                    }
-                    myDirective.dogToPlayWith = waitingDogs.get(i);
-
+                    myDirective.dogToPlayWith = waitingDogs.get(0);
                     myDirective.instruction = Directive.Instruction.THROW_BALL;
 //            simPrinter.println(ownersDistances.get(0).location.toString().equals(this.lastThrow.toString()));
 //            simPrinter.println(ownersDistances.get(0).location.toString());
 //            simPrinter.println(this.lastThrow.toString());
-                    this.lastThrow = getClockWiseNextLane(this.allLocationMap, myOwner, waitingDogs.get(i).getBreed());
+                    this.lastThrow = getClockWiseNextLane(this.allLocationMap, myOwner, waitingDogs.get(0).getBreed());
                     myDirective.parkLocation = this.lastThrow;
 
-                    if (!this.g1Owners.isEmpty()) {
-                        if (this.g1Owners.get(0).hasDog(waitingDogs.get(i)) && round % 4 == 1 && myOwner.getNameAsString().equals("Carol")) {
+                    if (this.g1Owners.size() == 1) {
+                        if (this.g1Owners.get(0).hasDog(waitingDogs.get(0)) && round % 4 == 1 && getDist(myOwner.getLocation(), this.g1Owners.get(0).getLocation()) < 40) {
                             this.lastThrow = this.g1Owners.get(0).getLocation();
                             myDirective.parkLocation = this.lastThrow;
                         }
@@ -205,27 +237,23 @@ public class Player extends dogs.sim.Player {
         return myDirective;
     }
 
-    private ParkLocation getTriangularLoc(ParkLocation myLocation, String group) {
-        Owner nextVertice = new Owner();
-        Owner lastVertice = new Owner();
-        int minDist = 200;
+    private ParkLocation getThirdVertex(ParkLocation v1, ParkLocation v2, Double d1, Double d2) {
+        Double dV = getDist(v1, v2);
+        Double d12 = Math.pow(d1, 2);
+        Double d22 = Math.pow(d2, 2);
+        Double dV2 = Math.pow(dV, 2);
+        Double phi1 = Math.atan2(v2.getColumn()-v1.getColumn(), v2.getRow()-v1.getRow());
+        Double phi2 = Math.acos((d12+dV2-d22)/(2*d1*dV));
 
-        List<Owner> tmpOwners = new ArrayList<>();
+        Double x = v1.getRow()+d1*Math.cos(phi1-phi2);
+        Double y = v1.getColumn()+d1*Math.sin(phi1-phi2);
 
-        if (group.equals("g1")) tmpOwners = this.g1Owners;
-        else if (group.equals("g2")) tmpOwners = this.g2Owners;
-        else if (group.equals("g3")) tmpOwners = this.g3Owners;
-        else if (group.equals("g5")) tmpOwners = this.g5Owners;
-
-        for (Owner owner : tmpOwners) {
-            if (owner.getLocationAsString().equals(myLocation.toString())) lastVertice = owner;
-            if (!owner.getLocationAsString().equals(myLocation.toString())) {
-                if (getDist(owner.getLocation(), myLocation) < minDist) nextVertice = owner;
-            }
+        if (x < 0 || y < 0) {
+            x = v1.getRow()+d1*Math.cos(phi1+phi2);
+            y = v1.getColumn()+d1*Math.sin(phi1+phi2);
         }
 
-        
-
+        return new ParkLocation(x, y);
     }
 
     private ParkLocation getRandom40m(ParkLocation location) {
@@ -270,7 +298,7 @@ public class Player extends dogs.sim.Player {
 
     private Dog getMyAvailableDog(Owner owner) {
         for (Dog dog : owner.getDogs()) {
-            if (dog.isWaitingForItsOwner()) return dog;
+            if (dog.isWaitingForItsOwner() && dog.getExerciseTimeRemaining() != 0.0) return dog;
         }
         return owner.getDogs().get(0);
     }
@@ -278,45 +306,17 @@ public class Player extends dogs.sim.Player {
     private ParkLocation getClockWiseNextLane(Map<Owner, OwnerDistance> owners, Owner myOwner, DogReference.Breed breed) {
         ParkLocation target = getClockWiseNext(this.allLocationMap, myOwner);
 
-        Double beta = 0.0;
-        Double breedAngle = (180 - Math.toDegrees(Math.atan((beta/2)/39))*2);
-        Double alpha = breedAngle/2;
-        int xIndic = 0;
-        int yIndic = 0;
-
-        if (myOwner.getLocation().getRow() > target.getRow()) xIndic = 1;
-        else xIndic = -1;
-        if (myOwner.getLocation().getColumn() > target.getColumn()) yIndic = 1;
-        else yIndic = -1;
-
-//        if (myOwner.getLocation().getRow() > target.getRow() && myOwner.getLocation().getColumn() > target.getColumn()) {
-//            xIndic = 1;
-//            yIndic = -1;
-//        }
-//        else if (myOwner.getLocation().getRow() > target.getRow() && myOwner.getLocation().getColumn() < target.getColumn()) {
-//            xIndic = 1;
-//            yIndic = 1;
-//        }
-//        else if (myOwner.getLocation().getRow() < target.getRow() && myOwner.getLocation().getColumn() > target.getColumn()) {
-//            xIndic = -1;
-//            yIndic = 1;
-//        }
-//        else {
-//            xIndic = -1;
-//            yIndic = -1;
-//        }
-
-
         switch (breed) {
             case LABRADOR:
-                return new ParkLocation(target.getRow(), target.getColumn());
+                return getThirdVertex(myOwner.getLocation(), target, 39.0, 2.25);
             case POODLE:
-                return new ParkLocation(target.getRow()+xIndic*beta/3*Math.sin(alpha), target.getColumn()+yIndic*beta/3*Math.cos(alpha));
+                return getThirdVertex(myOwner.getLocation(), target, 39.0, 4.5);
             case SPANIEL:
-                return new ParkLocation(target.getRow()+xIndic*beta/3*2*Math.sin(alpha), target.getColumn()+yIndic*beta/3*2*Math.cos(alpha));
+                return getThirdVertex(myOwner.getLocation(), target, 39.0, 6.75);
             case TERRIER:
-                return new ParkLocation(target.getRow()+xIndic*beta*Math.sin(alpha), target.getColumn()+yIndic*beta*Math.cos(alpha));
+                return getThirdVertex(myOwner.getLocation(), target, 39.0, 9.0);
         }
+
         return target;
     }
 
@@ -391,10 +391,10 @@ public class Player extends dogs.sim.Player {
         Double x2 = l2.getRow();
         Double y2 = l2.getColumn();
 
-        return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
+        return Math.sqrt(Math.pow(y2-y1, 2) + Math.pow(x2-x1, 2));
     }
 
-    private ParkLocation getMyCircularNextLocation(Owner myOwner, ParkLocation finalLocation) {
+    private ParkLocation getMyNextLocation(Owner myOwner, ParkLocation finalLocation) {
         Double x = myOwner.getLocation().getRow();
         Double y = myOwner.getLocation().getColumn();
 
@@ -402,7 +402,23 @@ public class Player extends dogs.sim.Player {
 //        simPrinter.println(myOwner.getLocationAsString());
 //        simPrinter.println(finalLocation.toString());
 
-        if (finalLocation.getRow().intValue() != x.intValue()) {
+        if (finalLocation.getRow().intValue() < x.intValue()) {
+            if (finalLocation.getRow() <= x - 5) {
+                x = x - 5;
+            }
+            else if (finalLocation.getRow() > x - 5) {
+                x = x - Math.abs(finalLocation.getRow() - x);
+            }
+        }
+        else if (finalLocation.getColumn().intValue() < y.intValue()) {
+            if (finalLocation.getColumn() <= y - 5) {
+                y = y - 5;
+            }
+            else if (finalLocation.getColumn() > y - 5) {
+                y = y - Math.abs(finalLocation.getColumn() - y);
+            }
+        }
+        else if (finalLocation.getRow().intValue() > x.intValue()) {
             if (finalLocation.getRow() >= x + 5) {
                 x = x + 5;
             }
@@ -410,7 +426,7 @@ public class Player extends dogs.sim.Player {
                 x = x + Math.abs(finalLocation.getRow() - x);
             }
         }
-        else if (finalLocation.getColumn().intValue() != y.intValue()) {
+        else if (finalLocation.getColumn().intValue() > y.intValue()) {
             if (finalLocation.getColumn() >= y + 5) {
                 y = y + 5;
             }
@@ -476,7 +492,7 @@ public class Player extends dogs.sim.Player {
 
         List<Dog> tmpMyDogs = new ArrayList<>();
         for (Dog dog : myOwner.getDogs()) {
-            if (dog.isWaitingForItsOwner())
+            if (dog.isWaitingForItsOwner() && dog.getExerciseTimeRemaining() != 0.0)
                 tmpMyDogs.add(dog);
         }
 
