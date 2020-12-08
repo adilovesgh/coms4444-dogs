@@ -17,7 +17,6 @@ public class Player extends dogs.sim.Player {
     final List<String> polygonGroups = List.of("g1");
 
     private Double stdDist = 39.0;
-    private boolean centralized = false;
     private List<Owner> coOwners = new ArrayList<>();
     private List<Owner> g1Owners = new ArrayList<>();
     private List<Owner> g2Owners = new ArrayList<>();
@@ -35,8 +34,11 @@ public class Player extends dogs.sim.Player {
     private Owner globalOwner = new Owner();
     private List<Owner> onlyCoopOwners = new ArrayList<>();
     private Double dividedAngle = 0.0;
+    private int globalRound = 0;
+    private boolean addOneToCycle = false;
     private boolean weInPosition = false;
     private boolean coopInPosition = false;
+    private boolean centralized = false;
 
     /**
      * Player constructor
@@ -129,15 +131,17 @@ public class Player extends dogs.sim.Player {
                 int nReady = Collections.frequency(g1Signals, this.g1FinalPosition);
                 if (nReady >= 2 && !this.coopInPosition) {
                     Double minDist = 200.0;
-                    for (Owner owner : g1Owners) {
-                        if (!owner.getNameAsEnum().equals(this.g1Owners.get(0).getNameAsEnum())) {
-                            if (getDist(myOwner.getLocation(), owner.getLocation()) < minDist) {
-                                minDist = getDist(myOwner.getLocation(), owner.getLocation());
-                                this.globalOwner = owner;
-                            }
-                        }
-                    }
+//                    for (Owner owner : g1Owners) {
+//                        if (!owner.getNameAsEnum().equals(this.g1Owners.get(0).getNameAsEnum())) {
+//                            if (getDist(myOwner.getLocation(), owner.getLocation()) < minDist) {
+//                                minDist = getDist(myOwner.getLocation(), owner.getLocation());
+//                                this.globalOwner = owner;
+//                            }
+//                        }
+//                    }
+                    this.globalOwner = this.g1Owners.get(1);
                     if (this.globalOwner.getCurrentSignal().equals(this.g1FinalPosition)) {
+                        this.globalRound = ((int) (getDist(this.g1Owners.get(0).getLocation(), this.targetLocation)/5) + 1) * 5 + round + 10;
                         this.coopInPosition = true;
                         this.targetLocation = getThirdVertex(this.g1Owners.get(0).getLocation(), this.globalOwner.getLocation(), this.stdDist, this.stdDist);
                     }
@@ -153,19 +157,25 @@ public class Player extends dogs.sim.Player {
                     return myDirective;
                 }
 
-                if (this.coopInPosition && round % 50 == 1) {
-                    Random rand = new Random();
-                    double randomDouble = rand.nextDouble();
+                if (round > this.globalRound && round < this.globalRound + 10 && this.globalRound > 0) {
+                    myDirective.signalWord = this.g1Owners.get(0).getNameAsString();
+                    myDirective.instruction = Directive.Instruction.CALL_SIGNAL;
+                    return myDirective;
+                }
 
-                    if (randomDouble < 0.5) this.lastThrow = this.globalOwner.getLocation();
-                    else this.lastThrow = this.g1Owners.get(0).getLocation();
+                else if (this.coopInPosition && round > this.globalRound) {
+//                    Random rand = new Random();
+//                    double randomDouble = rand.nextDouble();
+//
+//                    if (randomDouble < 0.5) this.lastThrow = this.globalOwner.getLocation();
+//                    else this.lastThrow = this.g1Owners.get(0).getLocation();
 
                     List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
 
                     if (waitingDogs.size() > 0) {
                         myDirective.dogToPlayWith = waitingDogs.get(0);
                         myDirective.instruction = Directive.Instruction.THROW_BALL;
-                        myDirective.parkLocation = this.lastThrow;
+                        myDirective.parkLocation = getIndividualLane(this.g1Owners.get(1).getLocation(), myOwner, waitingDogs.get(0).getBreed());
                     }
 
 //                    myDirective.dogToPlayWith = getMyAvailableDog(myOwner);
@@ -221,10 +231,16 @@ public class Player extends dogs.sim.Player {
                     myDirective.parkLocation = this.lastThrow;
 
                     if (this.g1Owners.size() == 1) {
-                        if (this.g1Owners.get(0).hasDog(waitingDogs.get(0)) && round % 4 == 1 && getDist(myOwner.getLocation(), this.g1Owners.get(0).getLocation()) < 40) {
-                            this.lastThrow = this.g1Owners.get(0).getLocation();
-                            myDirective.parkLocation = this.lastThrow;
-                        }
+                        if (getOtherOwnersSignals(this.g1Owners).contains(myOwner.getNameAsString())) this.addOneToCycle = true;
+//                        if (this.g1Owners.get(0).hasDog(waitingDogs.get(0)) && round % 4 == 1 && getDist(myOwner.getLocation(), this.g1Owners.get(0).getLocation()) < 40) {
+//                            this.lastThrow = this.g1Owners.get(0).getLocation();
+//                            myDirective.parkLocation = this.lastThrow;
+//                        }
+                    }
+
+                    if (this.addOneToCycle) {
+                        this.lastThrow = this.g1Owners.get(0).getLocation(); //getIndividualLane(this.g1Owners.get(0).getLocation(), myOwner, waitingDogs.get(0).getBreed());
+                        myDirective.parkLocation = this.lastThrow;
                     }
 
                 }
@@ -283,6 +299,13 @@ public class Player extends dogs.sim.Player {
             else if (this.g5OwnersNames.contains(owner.getNameAsEnum())) this.g5Owners.add(owner);
         }
 
+        Comparator<Owner> byName = (Owner o1, Owner o2) -> o1.getNameAsString().compareTo(o2.getNameAsString());
+        Collections.sort(this.coOwners, byName);
+        Collections.sort(this.g1Owners, byName);
+        Collections.sort(this.g2Owners, byName);
+        Collections.sort(this.g3Owners, byName);
+        Collections.sort(this.g5Owners, byName);
+
         onlyCoopOwners.clear();
 
         onlyCoopOwners.addAll(this.coOwners);
@@ -306,6 +329,21 @@ public class Player extends dogs.sim.Player {
             if (dog.isWaitingForItsOwner() && dog.getExerciseTimeRemaining() != 0.0) return dog;
         }
         return owner.getDogs().get(0);
+    }
+
+    private ParkLocation getIndividualLane(ParkLocation target, Owner myOwner, DogReference.Breed breed) {
+        switch (breed) {
+            case LABRADOR:
+                return getThirdVertex(myOwner.getLocation(), target, this.stdDist, 2.25);
+            case POODLE:
+                return getThirdVertex(myOwner.getLocation(), target, this.stdDist, 4.5);
+            case SPANIEL:
+                return getThirdVertex(myOwner.getLocation(), target, this.stdDist, 6.75);
+            case TERRIER:
+                return getThirdVertex(myOwner.getLocation(), target, this.stdDist, 9.0);
+        }
+
+        return target;
     }
 
     private ParkLocation getClockWiseNextLane(Map<Owner, OwnerDistance> owners, Owner myOwner, DogReference.Breed breed) {
