@@ -194,8 +194,18 @@ public class Player extends dogs.sim.Player {
             List<Dog> waitingDogs = getWaitingDogs(myOwner, this.onlyCoopOwners);
 
             int numRoundsPositioning = getNumRoundsPositioning(this.allLocationMap);
+//            simPrinter.println("--------------------");
+//            simPrinter.println(myOwner.getNameAsString());
+//            simPrinter.println(numRoundsPositioning);
+//            simPrinter.println(round);
+//            simPrinter.println("--------------------");
 
-            if (round > numRoundsPositioning && round < numRoundsPositioning + 4) {
+            if (round > numRoundsPositioning && round < numRoundsPositioning + 10) {
+//                simPrinter.println("--------------------");
+//                simPrinter.println(myOwner.getNameAsString());
+//                simPrinter.println(numRoundsPositioning);
+//                simPrinter.println(this.finalPosition);
+//                simPrinter.println("--------------------");
                 myDirective.signalWord = this.finalPosition;
                 myDirective.instruction = Directive.Instruction.CALL_SIGNAL;
                 return myDirective;
