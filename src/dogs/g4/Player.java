@@ -16,6 +16,8 @@ public class Player extends dogs.sim.Player {
     final String g1FinalPosition = "here";
     final List<String> polygonGroups = List.of("g1");
 
+    private Double stdDist = 39.0;
+    private boolean centralized = false;
     private List<Owner> coOwners = new ArrayList<>();
     private List<Owner> g1Owners = new ArrayList<>();
     private List<Owner> g2Owners = new ArrayList<>();
@@ -137,11 +139,9 @@ public class Player extends dogs.sim.Player {
                     }
                     if (this.globalOwner.getCurrentSignal().equals(this.g1FinalPosition)) {
                         this.coopInPosition = true;
-                        this.targetLocation = getThirdVertex(this.g1Owners.get(0).getLocation(), this.globalOwner.getLocation(), 39.0, 39.0);
+                        this.targetLocation = getThirdVertex(this.g1Owners.get(0).getLocation(), this.globalOwner.getLocation(), this.stdDist, this.stdDist);
                     }
                 }
-
-//                simPrinter.println(this.targetLocation);
 
                 if (!myOwner.getLocationAsString().equals(this.targetLocation.toString()) && this.coopInPosition) {
                     this.lastPosition = getMyNextLocation(myOwner, this.targetLocation);
@@ -152,14 +152,6 @@ public class Player extends dogs.sim.Player {
                     myDirective.parkLocation = this.lastPosition;
                     return myDirective;
                 }
-
-//                    simPrinter.println("---------------------");
-//                    simPrinter.println(g1Owners.get(0).getNameAsString());
-//                    simPrinter.println(getDist(myOwner.getLocation(), g1Owners.get(0).getLocation()));
-//                    simPrinter.println(this.globalOwner.getNameAsString());
-//                    simPrinter.println(getDist(myOwner.getLocation(), this.globalOwner.getLocation()));
-//                    simPrinter.println("---------------------");
-
 
                 if (this.coopInPosition && round % 50 == 1) {
                     Random rand = new Random();
@@ -184,7 +176,8 @@ public class Player extends dogs.sim.Player {
             }
         }
         else {
-            this.allLocationMap = getCircularLocations(200, 200, myOwner, 39.0, false, 10.0);
+            if (!this.g2Owners.isEmpty() || !this.g3Owners.isEmpty() || !this.g5Owners.isEmpty()) this.centralized = true;
+            this.allLocationMap = getCircularLocations(200, 200, myOwner, this.stdDist, this.centralized, 0.0);
             ParkLocation finalLocation = this.allLocationMap.get(myOwner).location;
             //updateDistances(otherOwners, myOwner);
 
@@ -202,7 +195,7 @@ public class Player extends dogs.sim.Player {
 
             int numRoundsPositioning = getNumRoundsPositioning(this.allLocationMap);
 
-            if (round > numRoundsPositioning && round < numRoundsPositioning + 10) {
+            if (round > numRoundsPositioning && round < numRoundsPositioning + 4) {
                 myDirective.signalWord = this.finalPosition;
                 myDirective.instruction = Directive.Instruction.CALL_SIGNAL;
                 return myDirective;
@@ -232,8 +225,10 @@ public class Player extends dogs.sim.Player {
 //            simPrinter.println(allLocationMap.get(owner).dist);
 //        }
 //        simPrinter.println("----------------------------");
+            return myDirective;
         }
 
+        myDirective.instruction = Directive.Instruction.NOTHING;
         return myDirective;
     }
 
@@ -248,7 +243,7 @@ public class Player extends dogs.sim.Player {
         Double x = v1.getRow()+d1*Math.cos(phi1-phi2);
         Double y = v1.getColumn()+d1*Math.sin(phi1-phi2);
 
-        if (x < 0 || y < 0) {
+        if (x < 0 || y < 0 || x > 200 || y > 200) {
             x = v1.getRow()+d1*Math.cos(phi1+phi2);
             y = v1.getColumn()+d1*Math.sin(phi1+phi2);
         }
@@ -260,7 +255,7 @@ public class Player extends dogs.sim.Player {
         Random rand = new Random();
         Double randomAngle = rand.nextDouble()*360;
 
-        return new ParkLocation(location.getRow() + 39*Math.cos(Math.toRadians(randomAngle)), location.getColumn() + 39*Math.sin(Math.toRadians(randomAngle)));
+        return new ParkLocation(location.getRow() + this.stdDist*Math.cos(Math.toRadians(randomAngle)), location.getColumn() + this.stdDist*Math.sin(Math.toRadians(randomAngle)));
     }
 
     private void updateOwnersList(List<Owner> owners) {
@@ -281,7 +276,7 @@ public class Player extends dogs.sim.Player {
         onlyCoopOwners.clear();
 
         onlyCoopOwners.addAll(this.coOwners);
-        if (this.polygonGroups.contains("g1")) {
+        if (this.polygonGroups.contains("g1") && this.g1Owners.size() == 1) {
             onlyCoopOwners.addAll(this.g1Owners);
         }
         if (this.polygonGroups.contains("g2")) {
@@ -308,13 +303,13 @@ public class Player extends dogs.sim.Player {
 
         switch (breed) {
             case LABRADOR:
-                return getThirdVertex(myOwner.getLocation(), target, 39.0, 2.25);
+                return getThirdVertex(myOwner.getLocation(), target, this.stdDist, 2.25);
             case POODLE:
-                return getThirdVertex(myOwner.getLocation(), target, 39.0, 4.5);
+                return getThirdVertex(myOwner.getLocation(), target, this.stdDist, 4.5);
             case SPANIEL:
-                return getThirdVertex(myOwner.getLocation(), target, 39.0, 6.75);
+                return getThirdVertex(myOwner.getLocation(), target, this.stdDist, 6.75);
             case TERRIER:
-                return getThirdVertex(myOwner.getLocation(), target, 39.0, 9.0);
+                return getThirdVertex(myOwner.getLocation(), target, this.stdDist, 9.0);
         }
 
         return target;
@@ -349,21 +344,17 @@ public class Player extends dogs.sim.Player {
     }
 
     private Integer getNumRoundsPositioning(Map<Owner, OwnerDistance> finalPositions) {
-        Owner farOwner = new Owner();
         Double farOwnerDist = 0.0;
-        int numRounds = 0;
 
         for (Owner owner : finalPositions.keySet()) {
             if (getDist(finalPositions.get(owner).location, new ParkLocation(0.0,0.0)) > farOwnerDist) {
                 farOwnerDist = getDist(finalPositions.get(owner).location, new ParkLocation(0.0,0.0));
-                farOwner = owner;
             }
         }
 
-        numRounds = (int) (finalPositions.get(farOwner).location.getRow() / 5) + 1 +
-                (int) (finalPositions.get(farOwner).location.getColumn() / 5) + 1;
+        int numberSteps = (int) (farOwnerDist/5) + 1;
 
-        return numRounds * 5;
+        return numberSteps * 5;
     }
 
     private List<Owner.OwnerName> getNames(List <Owner> owners) {
@@ -397,41 +388,56 @@ public class Player extends dogs.sim.Player {
     private ParkLocation getMyNextLocation(Owner myOwner, ParkLocation finalLocation) {
         Double x = myOwner.getLocation().getRow();
         Double y = myOwner.getLocation().getColumn();
+        Double dist = getDist(myOwner.getLocation(), finalLocation);
+        Double cosTheta = (Math.abs(x - finalLocation.getRow()))/dist;
+        Double sinTheta = (Math.abs(y - finalLocation.getColumn()))/dist;
 
 //        simPrinter.println(myOwner.getNameAsString());
 //        simPrinter.println(myOwner.getLocationAsString());
 //        simPrinter.println(finalLocation.toString());
 
-        if (finalLocation.getRow().intValue() < x.intValue()) {
-            if (finalLocation.getRow() <= x - 5) {
-                x = x - 5;
+        if (finalLocation.getRow().intValue() <= x.intValue()) {
+            if (dist >= 5) {
+                if (finalLocation.getColumn().intValue() < y.intValue()) {
+                    x = x - 5*cosTheta;
+                    y = y - 5*sinTheta;
+                }
+                else {
+                    x = x - 5*cosTheta;
+                    y = y + 5*sinTheta;
+                }
             }
-            else if (finalLocation.getRow() > x - 5) {
-                x = x - Math.abs(finalLocation.getRow() - x);
-            }
-        }
-        else if (finalLocation.getColumn().intValue() < y.intValue()) {
-            if (finalLocation.getColumn() <= y - 5) {
-                y = y - 5;
-            }
-            else if (finalLocation.getColumn() > y - 5) {
-                y = y - Math.abs(finalLocation.getColumn() - y);
+            else {
+                if (finalLocation.getColumn().intValue() < y.intValue()) {
+                    x = x - dist*cosTheta;
+                    y = y - dist*sinTheta;
+                }
+                else {
+                    x = x - dist*cosTheta;
+                    y = y + dist*sinTheta;
+                }
             }
         }
         else if (finalLocation.getRow().intValue() > x.intValue()) {
-            if (finalLocation.getRow() >= x + 5) {
-                x = x + 5;
+            if (dist >= 5) {
+                if (finalLocation.getColumn().intValue() < y.intValue()) {
+                    x = x + 5*cosTheta;
+                    y = y - 5*sinTheta;
+                }
+                else {
+                    x = x + 5*cosTheta;
+                    y = y + 5*sinTheta;
+                }
             }
-            else if (finalLocation.getRow() < x + 5) {
-                x = x + Math.abs(finalLocation.getRow() - x);
-            }
-        }
-        else if (finalLocation.getColumn().intValue() > y.intValue()) {
-            if (finalLocation.getColumn() >= y + 5) {
-                y = y + 5;
-            }
-            else if (finalLocation.getColumn() < y + 5) {
-                y = y + Math.abs(finalLocation.getColumn() - y);
+            else {
+                if (finalLocation.getColumn().intValue() < y.intValue()) {
+                    x = x + dist*cosTheta;
+                    y = y - dist*sinTheta;
+                }
+                else {
+                    x = x + dist*cosTheta;
+                    y = y + dist*sinTheta;
+                }
             }
         }
 
@@ -441,10 +447,34 @@ public class Player extends dogs.sim.Player {
     private Map<Owner, OwnerDistance> getCircularLocations(Integer ySize, Integer xSize, Owner myOwner, Double maxDist, boolean centralized, Double margin) {
         Map<Owner, OwnerDistance> circularLocations = new HashMap<>();
         List<Owner> owners = new ArrayList<>(this.coOwners);
+        List<Owner> owners15 = new ArrayList<>();
+        List<Owner> ownersRest = new ArrayList<>();
         owners.add(myOwner);
 
         Comparator<Owner> byName = (Owner o1, Owner o2) -> o1.getNameAsString().compareTo(o2.getNameAsString());
         Collections.sort(owners, byName);
+
+        if (owners.size() > 15) {
+            int s1 = 15;
+            if (owners.size() - 15 < 5) {
+                s1 = owners.size() - 5;
+            }
+            centralized = true;
+            for (int i = 0; i < s1; i ++) {
+                owners15.add(owners.get(i));
+            }
+            for (int i = s1; i < owners.size(); i++) {
+                ownersRest.add(owners.get(i));
+            }
+            if (owners15.contains(myOwner)) {
+                owners.clear();
+                owners.addAll(owners15);
+            }
+            else {
+                owners.clear();
+                owners.addAll(ownersRest);
+            }
+        }
 
         this.dividedAngle = 360.0/(owners.size());
         Double angle = 0.0;
@@ -453,9 +483,15 @@ public class Player extends dogs.sim.Player {
         if (centralized) maxRadius = Math.min(ySize, xSize)/2.0;
         else maxRadius = radius + margin;
 
-        if (maxRadius >= Math.min(ySize/2, xSize/2)) {
-            maxRadius = 1.0*Math.min(ySize/2, xSize/2);
-            radius = maxRadius - margin;
+        if (maxRadius >= Math.min(ySize/2, xSize/2) && !centralized) {
+            maxRadius = Math.min(ySize, xSize)/2.0;
+            radius = maxRadius;
+            this.stdDist = radius * Math.sin(Math.toRadians(this.dividedAngle/2)) * 2;
+        }
+
+        if (radius >= Math.min(ySize/2, xSize/2) && centralized) {
+            radius = maxRadius;
+            this.stdDist = radius * Math.sin(Math.toRadians(this.dividedAngle/2)) * 2;
         }
 
         for (Owner owner : owners) {
