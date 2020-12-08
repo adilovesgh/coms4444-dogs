@@ -181,7 +181,11 @@ public class Player extends dogs.sim.Player {
 				}
 
 				// System.out.println(this.otherInstances.size());
-				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(this.otherInstances);
+				List<Owner> temp2 = new ArrayList<>();
+				for(Owner o: this.otherInstances){
+					temp2.add(o);
+				}
+				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(temp2);
 				List<Owner> temp = new LinkedList<Owner>();
 				temp.addAll(alphabeticalOwners);
 				double radius = 40 * (this.otherInstances.size() - 1);
@@ -198,7 +202,7 @@ public class Player extends dogs.sim.Player {
 				double colLocation = 85.0;
 				int row = 1;
 				int col = 1;
-
+				System.out.println("END OF R6 1 " + this.otherInstances.size());
 				while (unassignedOwners >= minGroupSize) {
 					// simPrinter.println("Iteration");
 					// simPrinter.println(unassignedOwners);
@@ -214,9 +218,7 @@ public class Player extends dogs.sim.Player {
 						alphabeticalOwners.remove(0);
 						unassignedOwners -= 1;
 					}
-					// simPrinter.println("coordinates");
-					// simPrinter.println(rowLocation);
-					// simPrinter.println(colLocation);
+
 					HashMap<String, ParkLocation> tempPositions = mapOwnerToParkLocationCircle(currentRound,
 							new ParkLocation(rowLocation, colLocation), (int) radius);
 					currentPositions.putAll(tempPositions);
@@ -226,6 +228,7 @@ public class Player extends dogs.sim.Player {
 						colLocation += 3 * radius;
 					}
 				}
+				System.out.println("END OF R6 2 " + this.otherInstances.size());
 				if (unassignedOwners > 0) {
 					currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, new ParkLocation(25.0, 25.0),
 							(int) radius);
