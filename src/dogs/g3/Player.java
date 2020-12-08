@@ -38,7 +38,6 @@ public class Player extends dogs.sim.Player {
 	private ParkLocation center;
 	private Double MAX_THROW_DIST = 40.0;
 	private Double MAX_MOVE_DIST = 5.0;
-
 	private int radius;
 
 	/**
@@ -165,6 +164,7 @@ public class Player extends dogs.sim.Player {
 			// if(round == 6){
 			// System.out.println(getOtherOwnersSignals(otherOwners).toString());
 			// }
+
 			if (round == 1) {
 				directive.instruction = Instruction.CALL_SIGNAL;
 				directive.signalWord = this.identification_signal;
@@ -332,6 +332,36 @@ public class Player extends dogs.sim.Player {
 					ownedByMe.add(dog);
 				}
 			}
+
+			//check if any dogs can be parked
+			if(myOwner.getNameAsEnum() == OwnerName.DAVE){
+				simPrinter.println("Dave's dogs:" + this.myDogs.toString());
+			}
+			for (Dog d : myOwner.getDogs()){
+				if(myOwner.getNameAsEnum() == OwnerName.DAVE){
+					simPrinter.println("Dave: " + d.getRealID());
+					simPrinter.println("Dog object: " + d);
+					simPrinter.println("Breed: " + d.getBreed());
+					simPrinter.println("Is waiting for Dave? " + d.isWaitingForOwner(myOwner));
+					simPrinter.println("Exercise remaining: " + d.getExerciseTimeRemaining());
+					simPrinter.println("Dave's parked dogs: " + this.graph.getNode(myOwner).getParkedDogs());
+				}
+				if (d.isWaitingForOwner(myOwner) && d.getExerciseTimeRemaining()==0.0 && !this.graph.getNode(myOwner).getParkedDogs().contains(d)){
+					Dog dogToPark = d;
+					List<OwnerName> neighborNames = this.graph.getConnections(myOwner);
+					List<Owner> neighbors = new ArrayList<>();
+					for (Owner owner : this.otherOwners) {
+						if (neighborNames.contains(owner.getNameAsEnum())) {
+							neighbors.add(owner);
+						}
+					}
+					directive = parkDog(myOwner, neighbors, dogToPark);
+					this.graph.getNode(myOwner).addParkedDog(dogToPark);
+					return directive;
+				}
+			}
+
+
 			// Owner alice = null;
 			// for(int i = 0; i < this.otherOwners.size(); i++){
 			// if(this.otherOwners.get(i).getNameAsEnum() == OwnerName.ALICE){
@@ -399,7 +429,7 @@ public class Player extends dogs.sim.Player {
 						neighbors.add(owner);
 					}
 				}
-				Owner requiredOwner = getLeastBusyNeighbor(neighbors, this.allDogs);
+				Owner requiredOwner = getLeastBusyNeighbor(neighbors, this.allDogs, this.graph);
 				if (requiredOwner == null) {
 					Directive d = throwRandomly();
 					// System.out.println(d.instruction.toString() + " " +
@@ -437,6 +467,86 @@ public class Player extends dogs.sim.Player {
 			e.printStackTrace();
 		}
 		Directive directive = new Directive();
+		return directive;
+	}
+
+
+	/**
+	* throw the ball for a dog that has completed exercise
+	* to an angle that does not block any edge
+	* @param myOwner 	current owner, owner of the dog
+	* @param neighbors  owners connected to myOwner in the graph
+	* @param dog 		the dog that has finished 30 min of exercise
+	* @return 			a Directive that throws the ball toward an open space
+	**/
+	private Directive parkDog(Owner myOwner, List<Owner> neighbors, Dog dog){
+		//first make sure the dog belongs to the owner and has finished exercise 
+		/*
+		if ((dog.getOwner() != myOwner) || (dog.getExerciseTimeRemaining() > 0.0)){
+			simPrinter.println(myOwner.getNameAsString() + "does not own the dog OR the dog hasn't finished exercising.");
+			return null;
+		}*/
+
+		Directive directive = new Directive();
+		directive.instruction = Instruction.THROW_BALL;
+		directive.dogToPlayWith = dog;
+		
+		Integer num_neighbors = neighbors.size();
+		Double min_angle_diff = 61 * Math.PI / 180.0;
+		ParkLocation neighborLoc, myLoc, neighbor2Loc;
+		Double neighbor_angle, target_angle;
+		Boolean valid_angle = true;
+		simPrinter.println(num_neighbors);
+		switch(num_neighbors){
+			case 0:
+				directive = throwRandomly();
+				break;
+			/*case 1:
+				neighborLoc = neighbors.get(0).getLocation();
+				myLoc = myOwner.getLocation();
+				Double scale = this.distanceBetweenLocs(myLoc, neighborLoc)/2; //throw to 2 meters way
+				Double x = myLoc.getRow() - (neighborLoc.getRow() - myLoc.getRow()) / scale;
+				Double y = myLoc.getColumn() - (neighborLoc.getColumn() - myLoc.getColumn()) / scale;
+
+				directive.parkLocation = this.getValidLocation(new ParkLocation(x, y));
+				break;*/
+			default:
+				List<Double> neighbor_angles = new ArrayList<>();
+				simPrinter.println("Neighbor name: " + neighbors.get(0).getNameAsString());
+				for (int i=0; i<neighbors.size(); i++){
+					neighborLoc = neighbors.get(i).getLocation();
+					myLoc = myOwner.getLocation();
+					neighbor_angle = Math.atan2(neighborLoc.getRow()-myLoc.getRow(), neighborLoc.getColumn()-myLoc.getColumn());
+					simPrinter.println("Neighbor angle: " + neighbor_angle);
+					target_angle = neighbor_angle + min_angle_diff;
+					valid_angle = true;
+
+					//check if this angle is at least 60 degrees away from every other neighbor
+					for (int j=0; j<neighbors.size(); j++){
+						if (i == j){continue;}
+
+						neighbor2Loc = neighbors.get(j).getLocation();
+						Double neighbor2_angle = Math.atan2(neighbor2Loc.getRow()-myLoc.getRow(), neighbor2Loc.getColumn()-myLoc.getColumn());
+						if (Math.abs(neighbor2_angle - target_angle) < min_angle_diff){
+							valid_angle = false; //too close to one of the neighbors, invalid angle
+							break;
+						}
+					}
+
+					if (valid_angle){
+							simPrinter.println("Parking angle: " + target_angle);
+							Double dist = 40.0;
+							directive.parkLocation = new ParkLocation(myLoc.getRow() + dist*Math.sin(target_angle), myLoc.getColumn() + dist*Math.cos(target_angle));
+							directive.parkLocation = this.getValidLocation(directive.parkLocation);
+							break;
+					}
+				}
+				if (!valid_angle){
+					simPrinter.println("Parking dog in random direction...");
+					directive = throwRandomly();
+				}
+				break;
+		}
 		return directive;
 	}
 
@@ -694,7 +804,7 @@ public class Player extends dogs.sim.Player {
 	 * @param neighbors a list of neighbor owners
 	 * @param allDogs   a list of all dogs in the park
 	 **/
-	private Owner getLeastBusyNeighbor(List<Owner> neighbors, List<Dog> allDogs) {
+	private Owner getLeastBusyNeighbor(List<Owner> neighbors, List<Dog> allDogs, PlayerGraph graph) {
 		HashMap<Owner, Integer> busyMap = new HashMap<Owner, Integer>();
 		for (Owner owner : neighbors) {
 			busyMap.put(owner, 0);
@@ -704,7 +814,7 @@ public class Player extends dogs.sim.Player {
 		for (Dog dog : allDogs) {
 			if (dog.isWaitingForPerson()) {
 				Owner ownerWaited = dog.getOwnerWaitingFor();
-				if (neighbors.contains(ownerWaited)) {
+				if (neighbors.contains(ownerWaited) && !graph.getNode(ownerWaited).getParkedDogs().contains(dog)) {
 					busyMap.put(ownerWaited, busyMap.get(ownerWaited) + 1);
 				}
 			}
