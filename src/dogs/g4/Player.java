@@ -12,8 +12,8 @@ public class Player extends dogs.sim.Player {
     final String g2FirstSignal = "two";
     final String g3FirstSignal = "three";
     final String g5FirstSignal = "Zyzzogeton";
-    final String finalPosition = "ready";
-    final String g1FinalPosition = "here";
+    final String finalPositionSignal = "ready";
+    final String g1FinalPositionSignal = "here";
     final List<String> polygonGroups = List.of("g1");
 
     private Double stdDist = 39.0;
@@ -137,7 +137,7 @@ public class Player extends dogs.sim.Player {
         }
         else {
             List<String> g1Signals = getOtherOwnersSignals(this.g1Owners);
-            int nReady = Collections.frequency(g1Signals, this.g1FinalPosition);
+            int nReady = Collections.frequency(g1Signals, this.g1FinalPositionSignal);
             if (nReady >= 2 && !this.coopInPosition) {
 //                Double minDist = 200.0;
 //                    for (Owner owner : g1Owners) {
@@ -149,7 +149,7 @@ public class Player extends dogs.sim.Player {
 //                        }
 //                    }
                 this.globalOwner = this.g1Owners.get(1);
-                if (this.globalOwner.getCurrentSignal().equals(this.g1FinalPosition)) {
+                if (this.globalOwner.getCurrentSignal().equals(this.g1FinalPositionSignal)) {
                     this.coopInPosition = true;
                     this.targetLocation = getThirdVertex(this.g1Owners.get(0).getLocation(), this.globalOwner.getLocation(), this.stdDist, this.stdDist);
                     this.globalRound = ((int) (getDist(this.g1Owners.get(0).getLocation(), this.targetLocation)/5) + 1) * 5 + round;
@@ -237,7 +237,7 @@ public class Player extends dogs.sim.Player {
 //                simPrinter.println(numRoundsPositioning);
 //                simPrinter.println(this.finalPosition);
 //                simPrinter.println("--------------------");
-            myDirective.signalWord = this.finalPosition;
+            myDirective.signalWord = this.finalPositionSignal;
             myDirective.instruction = Directive.Instruction.CALL_SIGNAL;
             return myDirective;
         }
