@@ -101,8 +101,8 @@ public class Player extends dogs.sim.Player {
             circleOwners.add(myOwner);
             circleOwners.addAll(myOwners);
 
-            // Collaborate with G4 if no other teams are present
-            if (g4Owners.size() > 0 && g1Owners.isEmpty() && g3Owners.isEmpty() && g5Owners.isEmpty()) {
+            // Collaborate with G4
+            if (g4Owners.size() > 0) {
                 circleOwners.addAll(g4Owners);
             }
         
