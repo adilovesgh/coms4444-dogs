@@ -14,7 +14,7 @@ public class Player extends dogs.sim.Player {
     final String g5FirstSignal = "Zyzzogeton";
     final String finalPositionSignal = "ready";
     final String g1FinalPositionSignal = "here";
-    final List<String> polygonGroups = List.of("g1");
+    final List<String> polygonGroups = List.of("g1", "g2");
 
     private Double stdDist = 39.0;
     private List<Owner> coOwners = new ArrayList<>();
@@ -285,11 +285,6 @@ public class Player extends dogs.sim.Player {
         Directive myDirective = new Directive();
 
         if (!this.g2Owners.isEmpty() || !this.g3Owners.isEmpty() || !this.g5Owners.isEmpty() || !this.g1Owners.isEmpty()) this.centralized = true;
-        List<Owner> tmpOwners = new ArrayList<>(this.coOwners);
-        tmpOwners.addAll(this.g2Owners);
-        Comparator<Owner> byName = (Owner o1, Owner o2) -> o1.getNameAsString().compareTo(o2.getNameAsString());
-        Collections.sort(tmpOwners, byName);
-
         this.allLocationMap = getCircularLocations(200, 200, myOwner, this.stdDist, this.centralized, 0.0, this.coOwners);
         ParkLocation finalLocation = this.allLocationMap.get(myOwner).location;
         //updateDistances(otherOwners, myOwner);
