@@ -67,7 +67,8 @@ public class Player extends dogs.sim.Player {
         else if (round == 6) { // fills ups randos to spot the random player, make starting config with nonrandom players
             findRandos(myOwner, otherOwners);
             findTeamOwners(myOwner, otherOwners);
-            updateLocations(teamOwners.get(1).size());
+            // updateLocations(teamOwners.get(1).size());
+            updateLocations(teamOwners.get(1).size(), false);
             // TODO: this breaks with random players!! make sure the circuits and shapes are preserved
             this.path = shortestPath(ownerLocations.get(myOwner));
             simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
@@ -396,6 +397,27 @@ public class Player extends dogs.sim.Player {
         // Collections.reverse(ownerCycle);
     }
 
+    private void updateLocations(int numOwners, boolean circuit) {
+        double dist = 39.9;     // use 40 for now
+        double fromEdges = 10.0; // how far from the edges of the park 
+        // OPTION: change dist and fromEdges to change the shape
+        List<ParkLocation> optimalStartingLocations = formNetwork(numOwners, dist, fromEdges);
+   
+        Collections.sort(nonRandos, new Comparator<Owner>() {
+            @Override public int compare(Owner o1, Owner o2) {
+                return o1.getNameAsString().compareTo(o2.getNameAsString());
+            }
+        });
+
+        // add cycle to array and to tracker for locations 
+        for (int i = 0; i < numOwners; i++) {
+            ownerLocations.put(nonRandos.get(i), optimalStartingLocations.get(i));
+            ownerCycle.add(nonRandos.get(i));
+        }
+        // OPTION: change the cycle direction
+        // Collections.reverse(ownerCycle);
+    }
+
     private void findRandos(Owner myOwner, List<Owner> otherOwners) {
         nonRandos.add(myOwner);
         List<String> teams = new ArrayList<String>(Arrays.asList("papaya", "two", "three", "zythum", "Zyzzogeton"));
@@ -524,6 +546,42 @@ public class Player extends dogs.sim.Player {
                 shape.add(new ParkLocation(x,y));
                 radian -= radianStep;
             }
+        }
+        return shape;
+    }
+
+    private List<ParkLocation> formNetwork(Integer n, Double dist, Double fromEdges) {
+        List<ParkLocation> shape = new ArrayList<ParkLocation>();
+        double delt = Math.sqrt(Math.pow(dist, 2) - Math.pow(dist/2, 2));
+        ParkLocation[] layout = new ParkLocation[] {
+            new ParkLocation(fromEdges, fromEdges ), // 1 
+            new ParkLocation(fromEdges + dist, fromEdges ), // 2
+            new ParkLocation(fromEdges + dist/2, fromEdges + delt ), // 3
+            new ParkLocation(fromEdges + dist*1.5, delt + fromEdges ), // 4 
+            new ParkLocation(fromEdges + dist*2, fromEdges ), // 5 
+            new ParkLocation(fromEdges + dist*2.5, delt + fromEdges ), // 6 
+            new ParkLocation(fromEdges + dist, 2*delt + fromEdges ), // 7 
+            new ParkLocation(fromEdges + dist*2, 2*delt + fromEdges ), // 8 
+            new ParkLocation(fromEdges, 2*delt + fromEdges ), // 9 
+            new ParkLocation(fromEdges + dist*3, 2*delt + fromEdges ), // 10
+            new ParkLocation(fromEdges + dist*1.5, 3*delt + fromEdges ), // 11
+            new ParkLocation(fromEdges + dist*2.5, 3*delt + fromEdges ), // 12
+            new ParkLocation(fromEdges + dist/2, 3*delt + fromEdges ), // 13
+            new ParkLocation(fromEdges + dist*3, fromEdges ), // 14
+            new ParkLocation(fromEdges + dist*2, 4*delt + fromEdges ), // 15
+            new ParkLocation(fromEdges + dist*3.5, 3*delt + fromEdges ), // 16
+            new ParkLocation(fromEdges + dist*3, 4*delt + fromEdges ), // 17
+            new ParkLocation(fromEdges + dist, 4*delt + fromEdges ), // 18
+            new ParkLocation(fromEdges + dist*3.5, delt + fromEdges ), // 19
+            new ParkLocation(fromEdges, 4*delt + fromEdges ), // 20
+            new ParkLocation(fromEdges + dist*3.5, 4*delt + fromEdges ), // 21
+            new ParkLocation(fromEdges + dist/2, 5*delt + fromEdges ), // 22
+            new ParkLocation(fromEdges + dist*1.5, 5*delt + fromEdges ), // 23
+            new ParkLocation(fromEdges + dist*2.5, 5*delt + fromEdges ), // 24
+            new ParkLocation(fromEdges + dist*4, 5*delt + fromEdges ) // 25 
+        };
+        for (int i = 1; i <= n; i++) {
+            shape.add(layout[i-1]);
         }
         return shape;
     }
