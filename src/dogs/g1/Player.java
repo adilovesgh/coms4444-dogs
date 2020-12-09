@@ -101,9 +101,8 @@ public class Player extends dogs.sim.Player {
         List<Owner> team3 = teamOwners.get(3);
         // special case collaboration with team 3
         if (team1.size()==1 && team3.size() >= 2) {
-            ParkLocation target = new ParkLocation();
+            ParkLocation target = moveCloserToCenterOtherOwners(team3);
             ParkLocation myLoc = myOwner.getLocation();
-            target = moveCloserToCenterOtherOwners(team3);
             
             if ((myLoc.getRow().equals(target.getRow())) && myLoc.getColumn().equals(target.getColumn())) {
                 List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
@@ -127,9 +126,8 @@ public class Player extends dogs.sim.Player {
         // special case collaboration with team 4
         List<Owner> team4 = teamOwners.get(4);
         if (team1.size()==1 && team4.size() >= 2) {
-            ParkLocation target = new ParkLocation();
             ParkLocation myLoc = myOwner.getLocation();
-            target = moveCloserToCenterOtherOwners(team4);
+            ParkLocation target = getThirdVertex(team4.get(0).getLocation(), team4.get(1).getLocation(), myLoc, 40.0, 40.0);
             
             if ((myLoc.getRow().equals(target.getRow())) && myLoc.getColumn().equals(target.getColumn())) {
                 if (g4inPositionFirst) {
@@ -140,7 +138,14 @@ public class Player extends dogs.sim.Player {
                     });
                     directive.instruction = Instruction.CALL_SIGNAL;
                     directive.signalWord = team4.get(0).getNameAsString();
-                    g4inPositionFirst = false;
+                    int count = 0;
+                    for (Owner owner : team4) {
+                        if (!owner.getCurrentSignal().equals("ready")) {
+                            count++;
+                        }
+                    }
+                    if (count == 1 || round > 250)
+                        g4inPositionFirst = false;
                     return directive;
                 }
                 List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
@@ -155,7 +160,7 @@ public class Player extends dogs.sim.Player {
             }
             else {
                 directive.instruction = Instruction.MOVE;
-                directive.parkLocation = moveCloserToCenterOtherOwners(team4);
+                directive.parkLocation = getThirdVertex(team4.get(0).getLocation(), team4.get(1).getLocation(), myLoc, 40.0, 40.0);
                 return directive;
             }
         }
@@ -381,8 +386,9 @@ public class Player extends dogs.sim.Player {
         double fromEdges = 10.0; // how far from the edges of the park 
         // OPTION: change dist and fromEdges to change the shape
         List<ParkLocation> optimalStartingLocations = getOptimalLocationShape(numOwners, dist, fromEdges);
+        List<Owner> g1 = teamOwners.get(1);
    
-        Collections.sort(nonRandos, new Comparator<Owner>() {
+        Collections.sort(g1, new Comparator<Owner>() {
             @Override public int compare(Owner o1, Owner o2) {
                 return o1.getNameAsString().compareTo(o2.getNameAsString());
             }
@@ -390,8 +396,8 @@ public class Player extends dogs.sim.Player {
 
         // add cycle to array and to tracker for locations 
         for (int i = 0; i < numOwners; i++) {
-            ownerLocations.put(nonRandos.get(i), optimalStartingLocations.get(i));
-            ownerCycle.add(nonRandos.get(i));
+            ownerLocations.put(g1.get(i), optimalStartingLocations.get(i));
+            ownerCycle.add(g1.get(i));
         }
         // OPTION: change the cycle direction
         // Collections.reverse(ownerCycle);
@@ -638,11 +644,16 @@ public class Player extends dogs.sim.Player {
      *
      */
     private ParkLocation moveCloserToOtherOwners(Owner myOwner, List<Owner> otherOwners) {
-        double dist = Double.MAX_VALUE;
         ParkLocation myLoc = myOwner.getLocation();
         Owner closestOwner = getClosestOwner(myOwner, otherOwners);
         ParkLocation target = closestOwner.getLocation();
+        return getNextMove(myLoc, target);
+    }
+
+    private ParkLocation getNextMove(ParkLocation myLoc, ParkLocation target) {
         double magnitude = distanceBetweenTwoPoints(myLoc, target);
+        if (magnitude <= 5)
+            return target;
         double x = ((target.getRow()-myLoc.getRow())*5/magnitude)+myLoc.getRow();
         double y = ((target.getColumn()-myLoc.getColumn())*5/magnitude)+myLoc.getColumn();
         return new ParkLocation(x,y);
@@ -703,6 +714,25 @@ public class Player extends dogs.sim.Player {
         Double x2 = p2.getColumn();
         Double y2 = p2.getRow();
         return euclideanDistance(x1-x2, y1-y2);
+    }
+
+    private ParkLocation getThirdVertex(ParkLocation v1, ParkLocation v2, ParkLocation v3, Double d1, Double d2) {
+        Double dV = distanceBetweenTwoPoints(v1, v2);
+        Double d12 = Math.pow(d1, 2);
+        Double d22 = Math.pow(d2, 2);
+        Double dV2 = Math.pow(dV, 2);
+        Double phi1 = Math.atan2(v2.getColumn()-v1.getColumn(), v2.getRow()-v1.getRow());
+        Double phi2 = Math.acos((d12+dV2-d22)/(2*d1*dV));
+
+        Double x = v1.getRow()+d1*Math.cos(phi1-phi2);
+        Double y = v1.getColumn()+d1*Math.sin(phi1-phi2);
+
+        if (x < 0 || y < 0 || x > 200 || y > 200) {
+            x = v1.getRow()+d1*Math.cos(phi1+phi2);
+            y = v1.getColumn()+d1*Math.sin(phi1+phi2);
+        }
+
+        return getNextMove(v3, new ParkLocation(x, y));
     }
   
     /**
