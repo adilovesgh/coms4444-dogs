@@ -586,23 +586,6 @@ public class Player extends dogs.sim.Player {
         return new ParkLocation(x, y);
     }
 
-    //Only exercise dongs that have training left
-	private List<Dog> getExercisingDogs(Owner owner, List<Dog> dogs) {
-		List<Dog> dogNotDone = new ArrayList<>();
-        dogNotDone.addAll(dogs);
-        // SimPrinter.print(dogNotDone.toString());
-        
-		for (Dog dog : dogs) {
-			if (dog.getOwner() == owner && dog.getExerciseTimeRemaining() == 0.0) {
-
-
-				dogNotDone.remove(dog);
-			}
-		}
-		System.out.println(dogNotDone.toString());
-		return dogNotDone;
-	}
-
     private Map<Owner, OwnerDistance> getCircularLocations(Integer ySize, Integer xSize, Owner myOwner, Double maxDist, boolean centralized, Double margin, List<Owner> polyOwners) {
         Map<Owner, OwnerDistance> circularLocations = new HashMap<>();
         List<Owner> owners = new ArrayList<>(polyOwners);
