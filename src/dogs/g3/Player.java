@@ -493,15 +493,17 @@ public class Player extends dogs.sim.Player {
 			System.out.println(topShift + " -> " + horizShift);
 			this.center.setColumn(this.center.getColumn() + topShift);
 			this.center.setRow(this.center.getRow() + horizShift);
+			this.otherInstances = sortOwnersAlphabetically(this.otherInstances);
 			this.positions = mapOwnerToParkLocationCircle(this.otherInstances, this.center, this.radius);
 		} else {
-			double horizShift = BROther.getLocation().getRow() - TL.getLocation().getRow();
-			double topShift = BROther.getLocation().getColumn() - TL.getLocation().getColumn()+ 80;
+			double horizShift = BLOther.getLocation().getRow() - TL.getLocation().getRow();
+			double topShift = BLOther.getLocation().getColumn() - TL.getLocation().getColumn();
 
 			System.out.println(topShift + " -> " + horizShift);
-			this.center.setRow(this.center.getColumn() - topShift);
-			this.center.setColumn(this.center.getRow() - horizShift);
+			this.center.setColumn(this.center.getColumn() - topShift);
+			this.center.setRow(this.center.getRow() - horizShift);
 			System.out.println(this.positions.toString());
+			this.otherInstances = sortOwnersAlphabetically(this.otherInstances);
 			this.positions = mapOwnerToParkLocationCircle(this.otherInstances, this.center, this.radius);
 			System.out.println(this.positions.toString());
 			
@@ -699,6 +701,7 @@ public class Player extends dogs.sim.Player {
 		if (instances.size() < 1) {
 			return new ArrayList<OwnerName>();
 		}
+		instances = sortOwnersAlphabetically(instances);
 		List<OwnerName> corners = new ArrayList<>();
 		double xPos = Integer.MAX_VALUE;
 		double yPos = Integer.MAX_VALUE;
@@ -720,7 +723,7 @@ public class Player extends dogs.sim.Player {
 			}
 		}
 		for (Owner o : instances) {
-			// System.out.println(o.getNameAsString() + ": " + o.getLocationAsString());
+			System.out.println(o.getNameAsString() + ": " + o.getLocationAsString());
 			// System.out.println(o.getNameAsString() + ": " + o.getLocation().getColumn());
 			if (o.getLocation().getColumn() > xPos && o.getLocation().getRow() < yPos
 					&& !corners.contains(o.getNameAsEnum())) {
@@ -751,7 +754,7 @@ public class Player extends dogs.sim.Player {
 
 		xPos = Integer.MIN_VALUE;
 		yPos = Integer.MIN_VALUE;
-		temp = instances.get(instances.size() - 1);
+		temp = instances.get(0);
 		for (Owner o : instances) {
 			if (!corners.contains(o.getNameAsEnum())) {
 				temp = o;
