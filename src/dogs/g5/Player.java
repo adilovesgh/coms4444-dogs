@@ -18,28 +18,37 @@ public class Player extends dogs.sim.Player {
 	private final String SEPARATE_DOGS_SIGNAL = "separate";
 	private final String[] OTHER_TEAM_NAMES = {"papaya","two","three","zythum","Zyzzogeton"};
 	private final String AVAILABLE_SIGNAL = "available";
+
 	private final Double DOG_SPACING 		= 1.6;
 	private final Double THROW_DISTANCE 		= 40.0;
-	private final Double LABRADOR_THROW_DISTANCE 	= THROW_DISTANCE;
+	private final Double LABRADOR_THROW_DISTANCE 	= THROW_DISTANCE - 2;
 	private final Double POODLE_THROW_DISTANCE 	= THROW_DISTANCE;// - DOG_SPACING;
 	private final Double SPANIEL_THROW_DISTANCE 	= THROW_DISTANCE;// - DOG_SPACING * 2; 
 	private final Double TERRIER_THROW_DISTANCE 	= THROW_DISTANCE;// - DOG_SPACING * 3;
 	private final Double CLONE_DISTANCE 		= Math.sqrt(Math.pow(THROW_DISTANCE, 2) - Math.pow(DOG_SPACING * 4, 2));
-	private final Double LABRADOR_OFFSET_ANGLE	= Math.atan(DOG_SPACING * 4/CLONE_DISTANCE);
+	private final Double LABRADOR_OFFSET_ANGLE	= 0.0; // Math.atan(DOG_SPACING * 4/CLONE_DISTANCE);
 	private final Double POODLE_OFFSET_ANGLE 	= Math.atan(DOG_SPACING * 3/CLONE_DISTANCE);
 	private final Double SPANIEL_OFFSET_ANGLE 	= Math.atan(DOG_SPACING * 2/CLONE_DISTANCE);
 	private final Double TERRIER_OFFSET_ANGLE 	= Math.atan(DOG_SPACING * 1/CLONE_DISTANCE);
+
 	private State state = State.FIRST_ROUND;
+
 	private Integer cloneOrder = 0;
+
 	private Double targetRow = 0.0;
 	private Double targetColumn = 0.0;
+
 	private boolean threeCollabEngaged = false;
 	private boolean completedExercise = false;
+
 	private List<String> clonesPresent = new ArrayList<>();		//List of simNames
 	private List<String> throwingPartners = new ArrayList<>();	//List of who we will throw to
 	private List<String> currentPartners = new ArrayList<>();	//Who we are currently throwing to
+
 	private Map<String, String> teamsPresent = new HashMap<>();	// SimName, Team Name
+
 	private Map<String, List<String>> signalLog = new HashMap<>();	// Signal, list of SimNames
+
 	private Map<Integer, HashMap<String, String>> conversationHistory = new HashMap<>();
 
 	/**
@@ -94,7 +103,7 @@ public class Player extends dogs.sim.Player {
 
 			case JUST_ARRIVED:
 				directive.instruction = Instruction.CALL_SIGNAL;
-				if (cloneOrder == 4 && threeCollabPossible()){
+				if (cloneOrder == -1 && threeCollabPossible()){
 					directive.signalWord = SEPARATE_DOGS_SIGNAL;
 					break;
 				}
@@ -116,10 +125,10 @@ public class Player extends dogs.sim.Player {
 				if (myOwner.allExerciseCompleted() == true && completedExercise == false){
 					state = State.COMPLETED;
 				}
+
 				break;
 
 			case THREE_SEPARATE:
-				simPrinter.println("HERE********");
 				if(waitingDogs.size() > 0){
 					setThrowLocation(directive, waitingDogs, myOwner, pickReceivingClone(otherOwners));
 					separateDogs(directive, getThreeOwner(otherOwners));
@@ -618,13 +627,22 @@ public class Player extends dogs.sim.Player {
 			if(dog.isWaitingForItsOwner() && dog.getExerciseTimeRemaining() > 0.0)
 				waitingDogs.add(dog);
 
-		for(Owner otherOwner : otherOwners)
-			for(Dog dog : otherOwner.getDogs()){
-				if(dog.isWaitingForOwner(myOwner)){
-					waitingDogs.add(dog);
+		for(Owner otherOwner : otherOwners){
+			if (clonesPresent.contains(otherOwner.getNameAsString())){
+				for(Dog dog : otherOwner.getDogs()){
+					if(dog.isWaitingForOwner(myOwner)){
+						waitingDogs.add(dog);
+					}
 				}
 			}
-	
+			else if(teamsPresent.containsKey(otherOwner.getNameAsString()) && myOwner.allExerciseCompleted()){
+				for(Dog dog : otherOwner.getDogs()){
+					if(dog.isWaitingForOwner(myOwner)){
+						waitingDogs.add(dog);
+					}
+				}
+			}
+		}
 		return waitingDogs;
 	}
 
