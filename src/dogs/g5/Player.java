@@ -17,6 +17,7 @@ public class Player extends dogs.sim.Player {
 	private final String READY_THROW_SIGNAL = "throwster";
 	private final String SEPARATE_DOGS_SIGNAL = "separate";
 	private final String[] OTHER_TEAM_NAMES = {"papaya","two","three","zythum","Zyzzogeton"};
+	private final String AVAILABLE_SIGNAL = "available";
 	private final Double DOG_SPACING 		= 1.6;
 	private final Double THROW_DISTANCE 		= 40.0;
 	private final Double LABRADOR_THROW_DISTANCE 	= THROW_DISTANCE;
@@ -33,6 +34,7 @@ public class Player extends dogs.sim.Player {
 	private Double targetRow = 0.0;
 	private Double targetColumn = 0.0;
 	private boolean threeCollabEngaged = false;
+	private boolean completedExercise = false;
 	private List<String> clonesPresent = new ArrayList<>();		//List of simNames
 	private List<String> throwingPartners = new ArrayList<>();	//List of who we will throw to
 	private List<String> currentPartners = new ArrayList<>();	//Who we are currently throwing to
@@ -110,6 +112,10 @@ public class Player extends dogs.sim.Player {
 
 				if(waitingDogs.size() > 0)
 					setThrowLocation(directive, waitingDogs, myOwner, pickReceivingClone(otherOwners));
+				
+				if (myOwner.allExerciseCompleted() == true && completedExercise == false){
+					state = State.COMPLETED;
+				}
 				break;
 
 			case THREE_SEPARATE:
@@ -124,6 +130,13 @@ public class Player extends dogs.sim.Player {
 				checkClonePartnersStatus(State.SELF_THROWING);
 				if(waitingDogs.size() > 0)
 					throwToSelf(directive, myOwner, waitingDogs);
+				break;
+			
+			case COMPLETED:
+				completedExercise = true;
+				directive.signalWord = AVAILABLE_SIGNAL;
+				directive.instruction = Instruction.CALL_SIGNAL;
+				state = State.PAIR_THROWING;
 		}
 
 		saveConversation(round, myOwner, otherOwners);
@@ -567,7 +580,7 @@ public class Player extends dogs.sim.Player {
 
 	private void saveConversation(Integer round, Owner myOwner, List<Owner> otherOwners){
 		conversationHistory.put(round, new HashMap<>());
-		
+
 		if (round  == 1){
 			initSignalLog();
 		}
@@ -622,6 +635,7 @@ public class Player extends dogs.sim.Player {
 		JUST_ARRIVED,
 		SELF_THROWING,
 		PAIR_THROWING,
-		THREE_SEPARATE;
+		THREE_SEPARATE,
+		COMPLETED;
 	}
 }
