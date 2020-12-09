@@ -112,7 +112,8 @@ public class Player extends dogs.sim.Player {
             ParkLocation myLoc = myOwner.getLocation();
             
             if ((myLoc.getRow().equals(target.getRow())) && myLoc.getColumn().equals(target.getColumn())) {
-                List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
+                List<Dog> waitingDogs = myDogsWaiting(myOwner);
+                waitingDogs.addAll(getWaitingDogs(myOwner, otherOwners));
                 if (waitingDogs.size() == 0 || round % 10 != 1) {
                     directive.instruction = Instruction.NOTHING;
                     return directive;
@@ -151,11 +152,12 @@ public class Player extends dogs.sim.Player {
                             count++;
                         }
                     }
-                    if (count == 1 || round > 250)
+                    if (count == 1 || round > 150)
                         g4inPositionFirst = false;
                     return directive;
                 }
-                List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
+                List<Dog> waitingDogs = myDogsWaiting(myOwner);
+                waitingDogs.addAll(getWaitingDogs(myOwner, otherOwners));
                 if (waitingDogs.size() == 0) {
                     directive.instruction = Instruction.NOTHING;
                     return directive;
@@ -220,7 +222,8 @@ public class Player extends dogs.sim.Player {
                     g4inPositionFirst = false;
                 }
                 if (!g4inPositionFirst) {
-                    List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
+                    List<Dog> waitingDogs = myDogsWaiting(myOwner);
+                    waitingDogs.addAll(getWaitingDogs(myOwner, otherOwners));
                     if (waitingDogs.size() == 0) {
                         directive.instruction = Instruction.NOTHING;
                         return directive;
@@ -508,6 +511,7 @@ public class Player extends dogs.sim.Player {
         Owner leastBusy = new Owner();
         for (Owner owner : otherOwners) {
             int dogsWaiting = getWaitingDogs(owner, otherOwners).size();
+            dogsWaiting += myDogsWaiting(owner).size();
             if (dogsWaiting < n) {
                 n = dogsWaiting;
                 leastBusy = owner;
