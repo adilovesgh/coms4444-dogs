@@ -101,6 +101,7 @@ public class Player extends dogs.sim.Player {
 
         if (this.coOwners.isEmpty() && this.g1Owners.size() <= 1) return oneG4Alone(myOwner, otherOwners);
         else if (this.coOwners.isEmpty() && this.g1Owners.size() > 1) return oneG4MultipleG1(myOwner, otherOwners, round);
+        else if (this.coOwners.size() > 1 && this.g2Owners.size() > 1) return multipleG4MultipleG2(myOwner, otherOwners, round);
         else return multipleG4(myOwner, otherOwners, round);
     }
 
@@ -204,11 +205,92 @@ public class Player extends dogs.sim.Player {
         return myDirective;
     }
 
+    private Directive multipleG4MultipleG2(Owner myOwner, List<Owner> otherOwners, Integer round) {
+        Directive myDirective = new Directive();
+
+        if (!this.g2Owners.isEmpty() || !this.g3Owners.isEmpty() || !this.g5Owners.isEmpty() || !this.g1Owners.isEmpty()) this.centralized = true;
+        List<Owner> tmpOwners = new ArrayList<>(this.coOwners);
+        tmpOwners.addAll(this.g2Owners);
+        Comparator<Owner> byName = (Owner o1, Owner o2) -> o1.getNameAsString().compareTo(o2.getNameAsString());
+        Collections.sort(tmpOwners, byName);
+
+        this.allLocationMap = getCircularLocations(200, 200, myOwner, this.stdDist, this.centralized, 0.0, tmpOwners);
+        ParkLocation finalLocation = this.allLocationMap.get(myOwner).location;
+        //updateDistances(otherOwners, myOwner);
+
+        if (finalLocation.getRow().intValue() != myOwner.getLocation().getRow().intValue() ||
+                finalLocation.getColumn().intValue() != myOwner.getLocation().getColumn().intValue()) {
+            myDirective.instruction = Directive.Instruction.MOVE;
+            this.lastPosition = getMyNextLocation(myOwner, finalLocation);
+            myDirective.parkLocation = this.lastPosition;
+            return myDirective;
+        }
+
+        this.weInPosition = true;
+
+        List<Dog> waitingDogs = getWaitingDogs(myOwner, this.onlyCoopOwners);
+
+        int numRoundsPositioning = getNumRoundsPositioning(this.allLocationMap);
+//            simPrinter.println("--------------------");
+//            simPrinter.println(myOwner.getNameAsString());
+//            simPrinter.println(numRoundsPositioning);
+//            simPrinter.println(round);
+//            simPrinter.println("--------------------");
+
+        if (round > numRoundsPositioning && round < numRoundsPositioning + 10) {
+//                simPrinter.println("--------------------");
+//                simPrinter.println(myOwner.getNameAsString());
+//                simPrinter.println(numRoundsPositioning);
+//                simPrinter.println(this.finalPosition);
+//                simPrinter.println("--------------------");
+            myDirective.signalWord = this.finalPositionSignal;
+            myDirective.instruction = Directive.Instruction.CALL_SIGNAL;
+            return myDirective;
+        }
+        else if (round > numRoundsPositioning) {
+            if (waitingDogs.size() > 0) {
+                myDirective.dogToPlayWith = waitingDogs.get(0);
+                myDirective.instruction = Directive.Instruction.THROW_BALL;
+//            simPrinter.println(ownersDistances.get(0).location.toString().equals(this.lastThrow.toString()));
+//            simPrinter.println(ownersDistances.get(0).location.toString());
+//            simPrinter.println(this.lastThrow.toString());
+                this.lastThrow = getClockWiseNextLane(this.allLocationMap, myOwner, waitingDogs.get(0).getBreed());
+                myDirective.parkLocation = this.lastThrow;
+
+//                if (this.g1Owners.size() == 1) {
+//                    if (getOtherOwnersSignals(this.g1Owners).contains(myOwner.getNameAsString())) this.addOneToCycle = true;
+////                        if (this.g1Owners.get(0).hasDog(waitingDogs.get(0)) && round % 4 == 1 && getDist(myOwner.getLocation(), this.g1Owners.get(0).getLocation()) < 40) {
+////                            this.lastThrow = this.g1Owners.get(0).getLocation();
+////                            myDirective.parkLocation = this.lastThrow;
+////                        }
+//                }
+//
+//                if (this.addOneToCycle) {
+//                    this.lastThrow = getIndividualLane(this.g1Owners.get(0).getLocation(), myOwner, waitingDogs.get(0).getBreed());
+//                    myDirective.parkLocation = this.lastThrow;
+//                }
+
+            }
+        }
+
+//        simPrinter.println("----------------------------");
+//        for (Owner owner : this.allLocationMap.keySet()) {
+//            simPrinter.println(allLocationMap.get(owner).dist);
+//        }
+//        simPrinter.println("----------------------------");
+        return myDirective;
+    }
+
     private Directive multipleG4(Owner myOwner, List<Owner> otherOwners, Integer round) {
         Directive myDirective = new Directive();
 
         if (!this.g2Owners.isEmpty() || !this.g3Owners.isEmpty() || !this.g5Owners.isEmpty() || !this.g1Owners.isEmpty()) this.centralized = true;
-        this.allLocationMap = getCircularLocations(200, 200, myOwner, this.stdDist, this.centralized, 0.0);
+        List<Owner> tmpOwners = new ArrayList<>(this.coOwners);
+        tmpOwners.addAll(this.g2Owners);
+        Comparator<Owner> byName = (Owner o1, Owner o2) -> o1.getNameAsString().compareTo(o2.getNameAsString());
+        Collections.sort(tmpOwners, byName);
+
+        this.allLocationMap = getCircularLocations(200, 200, myOwner, this.stdDist, this.centralized, 0.0, this.coOwners);
         ParkLocation finalLocation = this.allLocationMap.get(myOwner).location;
         //updateDistances(otherOwners, myOwner);
 
@@ -509,9 +591,9 @@ public class Player extends dogs.sim.Player {
         return new ParkLocation(x, y);
     }
 
-    private Map<Owner, OwnerDistance> getCircularLocations(Integer ySize, Integer xSize, Owner myOwner, Double maxDist, boolean centralized, Double margin) {
+    private Map<Owner, OwnerDistance> getCircularLocations(Integer ySize, Integer xSize, Owner myOwner, Double maxDist, boolean centralized, Double margin, List<Owner> polyOwners) {
         Map<Owner, OwnerDistance> circularLocations = new HashMap<>();
-        List<Owner> owners = new ArrayList<>(this.coOwners);
+        List<Owner> owners = new ArrayList<>(polyOwners);
         List<Owner> owners15 = new ArrayList<>();
         List<Owner> ownersRest = new ArrayList<>();
         owners.add(myOwner);
