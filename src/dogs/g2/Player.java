@@ -1,21 +1,34 @@
 package dogs.g2;
 
 import java.util.*;
+
+
 import dogs.sim.*;
+import dogs.sim.DogReference.Breed;
+
 import java.lang.Math;
 
 public class Player extends dogs.sim.Player {
+
+    private final boolean RANDOM_DIRECTION = false;
+    private final boolean USE_LANES = true;
+    private boolean WAIT_TO_THROW = true;
+    private final String PRIORITIZE_DOGS = "leastExercised"; //slowest, leastExercised, random
 
     private Double globalDeltaX = 39.95; // 39.95
     private Double polygonSide = 39.95;
     private Double circleCenterX = 100.0;
     private Double circleCenterY = 100.0;
+    private double dogDelta = 1.4;
+
+    private double startRound = 0;
 
     private double myCircleIndex;
     private double nextPersonIndex;
+    private ParkLocation previousPersonLocation;
     private ParkLocation nextPersonLocation;
 
-    final private boolean PRINT_STATEMENTS = true;
+    final private boolean PRINT_STATEMENTS = false;
     final private String g2InitialSignal = "two";
     final private String g1InitialSignal = "papaya";
     final private String g3InitialSignal = "three";
@@ -30,6 +43,8 @@ public class Player extends dogs.sim.Player {
 
     // Contains the owners to be arranged in a circle
     private ArrayList<Owner> circleOwners = new ArrayList<>();
+    private HashSet<String> circleNames = new HashSet<>();
+    private HashSet<String> myNames = new HashSet<>();
 
 
     private void print(String s) {
@@ -101,14 +116,49 @@ public class Player extends dogs.sim.Player {
             circleOwners.add(myOwner);
             circleOwners.addAll(myOwners);
 
+            for (Owner o : circleOwners){
+                myNames.add(o.getNameAsString());
+            }
+
             // Collaborate with G4
             if (g4Owners.size() > 0) {
                 circleOwners.addAll(g4Owners);
             }
-        
+
+            for (Owner o : circleOwners) {
+                circleNames.add(o.getNameAsString());
+            }
+            
+            // If no other players, stay close to the entrance
+            if (g4Owners.isEmpty() && g1Owners.isEmpty() && g5Owners.isEmpty() && g3Owners.isEmpty() && circleOwners.size() < 15) {
+
+                WAIT_TO_THROW = false;
+
+                double radius = this.getPolygonRadius(polygonSide, circleOwners.size());
+                this.circleCenterX = radius + dogDelta*3;
+                this.circleCenterY = radius + dogDelta*3;
+            }
+            else if (g1Owners.isEmpty() && g5Owners.isEmpty() && g3Owners.isEmpty() && circleOwners.size() < 15) {
+                double radius = this.getPolygonRadius(polygonSide, circleOwners.size());
+                this.circleCenterX = radius;
+                this.circleCenterY = radius;
+            }
+
+            double radius = this.getPolygonRadius(polygonSide, Math.min(circleOwners.size(), 15));
+            double distance = Math.sqrt(circleCenterX*circleCenterX + circleCenterY*circleCenterY);
+            startRound = Math.ceil(distance) + radius;
+
+            if (!WAIT_TO_THROW) {
+                startRound = 0;
+            }
+
             // Get the initial player location
             this.initiaLocation = this.getCircularInitialLocation(circleCenterX, circleCenterY, myOwner);
         }
+
+
+
+
 
 
         // Move to the initial position
@@ -117,20 +167,49 @@ public class Player extends dogs.sim.Player {
             return moveTowardsInitialLocation(myOwner);
         }
 
+        if (round < startRound) {
+            return new Directive();
+        }
+
         // Get a lit of currently waiting dogs
         ArrayList<Dog> dogs = this.getDogs(myOwner, otherOwners);
 
         Comparator<Dog> byTime = (Dog d1, Dog d2) -> (d1.getWaitingTimeRemaining() == d2.getWaitingTimeRemaining() ? Double.compare(d1.getRunningSpeed(), d2.getRunningSpeed()) : Double.compare(d1.getWaitingTimeRemaining(), d2.getWaitingTimeRemaining()));
+        
+        Comparator<Dog> comparator = new Comparator<Dog>(){
+
+            @Override
+            public int compare(final Dog d1, final Dog d2){
+                if (myNames.contains(d1.getOwner().getNameAsString()) && !myNames.contains(d2.getOwner().getNameAsString())) {
+                    return -1;
+                }
+                else if (myNames.contains(d2.getOwner().getNameAsString()) && !myNames.contains(d1.getOwner().getNameAsString())) {
+                    return 1;
+                }
+                else {
+                    if (PRIORITIZE_DOGS.equals("slowest")) {
+                        return d1.getWaitingTimeRemaining() == d2.getWaitingTimeRemaining() ? Double.compare(d1.getRunningSpeed(), d2.getRunningSpeed()) : Double.compare(d1.getWaitingTimeRemaining(), d2.getWaitingTimeRemaining());
+                    }
+                    else if (PRIORITIZE_DOGS.equals("leastExercised")) {
+                        return d1.getWaitingTimeRemaining() == d2.getWaitingTimeRemaining() ? Double.compare(d1.getExerciseTimeCompleted(), d2.getExerciseTimeCompleted()) : Double.compare(d1.getWaitingTimeRemaining(), d2.getWaitingTimeRemaining());
+                    }
+                    else {
+                        return Double.compare(d1.getWaitingTimeRemaining(), d2.getWaitingTimeRemaining());
+                    }
+                }
+            }
+        };
+        
         //Comparator<Dog> byTime = (Dog d1, Dog d2) -> (Double.compare(d1.getRunningSpeed(), d2.getRunningSpeed()));
 
-        Collections.sort(dogs, byTime);
+        Collections.sort(dogs, comparator);
 
         // TODO: Sort dogs in decreasing speed order
 
         if (dogs.size() > 0) {
             directive.instruction = Directive.Instruction.THROW_BALL;
             directive.dogToPlayWith = dogs.get(0);
-            directive.parkLocation = getCircularThrowLocation(myOwner);
+            directive.parkLocation = getCircularThrowLocation(myOwner, directive.dogToPlayWith);
         }
 
         return directive;
@@ -208,6 +287,11 @@ public class Player extends dogs.sim.Player {
             Double nextY = centerY + Math.sin(Math.toRadians(180 + nextPersonIndex * angle)) * radius;
             this.nextPersonLocation = new ParkLocation(nextX, nextY);
 
+            double previousPersonIndex = (myCircleIndex - 1) % n;
+            Double prevX = centerX + Math.cos(Math.toRadians(180 + previousPersonIndex * angle)) * radius;
+            Double prevY = centerY + Math.sin(Math.toRadians(180 + previousPersonIndex * angle)) * radius;
+            this.previousPersonLocation = new ParkLocation(prevX, prevY);
+
             // Get initial location on circumference
             Double myX;
             Double myY;
@@ -235,6 +319,11 @@ public class Player extends dogs.sim.Player {
             Double nextY = centerY + Math.sin(Math.toRadians(180 + nextPersonIndex * angle)) * radius;
             this.nextPersonLocation = new ParkLocation(nextX, nextY);
 
+            double previousPersonIndex = (myCircleIndex - 1) % n;
+            Double prevX = centerX + Math.cos(Math.toRadians(180 + previousPersonIndex * angle)) * radius;
+            Double prevY = centerY + Math.sin(Math.toRadians(180 + previousPersonIndex * angle)) * radius;
+            this.previousPersonLocation = new ParkLocation(prevX, prevY);
+
             // Get initial location on circumference
             Double myX;
             Double myY;
@@ -251,10 +340,57 @@ public class Player extends dogs.sim.Player {
 
     //************************** Methods to get the next throw location **********************************/
 
-    private ParkLocation getCircularThrowLocation(Owner myOwner) {
+    private ParkLocation getCircularThrowLocation(Owner myOwner, Dog dog) {
         print ("=============  " + computeDistance(myOwner.getLocation(), this.nextPersonLocation));
 
+        int rand = this.random.nextInt();
+
+        if (RANDOM_DIRECTION) {
+            if (rand % 2 == 0) {
+                return this.nextPersonLocation;
+            }
+            else {
+                return this.previousPersonLocation;
+            }
+        }
+
+        if (USE_LANES) {
+            // Throw the ball in 4 lanes, depending on dog breed
+            double radius = this.computeDistance(myOwner.getLocation(), this.nextPersonLocation);
+
+            double theta = 2 * Math.asin(dogDelta / (2 * radius));
+
+            Double newRow = 0.0;
+            Double newCol = 0.0;
+
+
+            if (dog.getBreed().equals(Breed.TERRIER)) {
+                theta *= 1;
+            }
+            else if (dog.getBreed().equals(Breed.SPANIEL)) {
+                theta *= -1;
+            }
+            else if (dog.getBreed().equals(Breed.POODLE)) {
+                theta *= 2;
+            }
+            else {
+                theta *= -2;
+            }
+
+            newRow = (this.nextPersonLocation.getRow() - myOwner.getLocation().getRow()) * Math.cos(theta) - (this.nextPersonLocation.getColumn() - myOwner.getLocation().getColumn()) * Math.sin(theta) + myOwner.getLocation().getRow();
+            newCol = (this.nextPersonLocation.getRow() - myOwner.getLocation().getRow()) * Math.sin(theta) + (this.nextPersonLocation.getColumn() - myOwner.getLocation().getColumn()) * Math.cos(theta) + myOwner.getLocation().getColumn();
+
+            ParkLocation newLocation = new ParkLocation(newRow, newCol);
+
+            print(this.previousPersonLocation.toString());
+            print(newLocation.toString());
+            print(""+theta  );
+
+            return newLocation;
+        }
+
         return this.nextPersonLocation;
+
     }
 
     // Throw to the owner across yourself
@@ -302,19 +438,17 @@ public class Player extends dogs.sim.Player {
         Directive directive = new Directive();
         directive.instruction = Directive.Instruction.MOVE;
 
-        Double deltaRow = this.initiaLocation.getRow() - owner.getLocation().getRow();
-        if (deltaRow > 0) {
-            directive.parkLocation = new ParkLocation(owner.getLocation().getRow() + Math.min(5.0, deltaRow), owner.getLocation().getColumn());
-            return directive;
-        }
-        
-        Double deltaCol = this.initiaLocation.getColumn() - owner.getLocation().getColumn();
-        if (deltaCol > 0) {
-            directive.parkLocation = new ParkLocation(owner.getLocation().getRow(), owner.getLocation().getColumn() + Math.min(5.0, deltaCol));
+        double alpha = Math.atan(Math.abs(owner.getLocation().getRow() - this.initiaLocation.getRow()) / Math.abs(owner.getLocation().getColumn() - this.initiaLocation.getColumn()));
+
+        if (computeDistance(owner.getLocation(), this.initiaLocation) > 5) {
+            Double deltaRow = 5.0 * Math.sin(alpha);
+            Double deltaCol = 5.0 * Math.cos(alpha);
+
+            directive.parkLocation =  new ParkLocation(owner.getLocation().getRow() + deltaRow, owner.getLocation().getColumn() + deltaCol);
             return directive;
         }
 
-        print("G2 WARNING: Unexpected behavior in moveTowardsInitialLocation().");
+        directive.parkLocation = this.initiaLocation;
         return directive;
     }
 
@@ -328,9 +462,11 @@ public class Player extends dogs.sim.Player {
             }
         }
         for (Owner otherOwner : otherOwners) {
-            for (Dog dog : otherOwner.getDogs()) {
-                if (dog.isWaitingForOwner(owner)) {
-                    dogs.add(dog);
+            if (circleNames.contains(otherOwner.getNameAsString())) {
+                for (Dog dog : otherOwner.getDogs()) {
+                    if (dog.isWaitingForOwner(owner)) {
+                        dogs.add(dog);
+                    }
                 }
             }
         }
