@@ -2,6 +2,8 @@ package dogs.g1;
 
 import java.util.*;
 
+import javax.swing.tree.AbstractLayoutCache.NodeDimensions;
+
 // import org.graalvm.compiler.lir.aarch64.AArch64Unary.MemoryOp;
 
 import java.lang.Math;
@@ -22,7 +24,9 @@ public class Player extends dogs.sim.Player {
     private int steppingStone;
     private HashMap<Integer, List<Owner>> teamOwners;
     private boolean waitToStart;
+    private int currentThrow = 0;
     private boolean g4inPositionFirst;
+    private boolean inCircuit = false;
 
     /**
      * Player constructor
@@ -67,8 +71,11 @@ public class Player extends dogs.sim.Player {
         else if (round == 6) { // fills ups randos to spot the random player, make starting config with nonrandom players
             findRandos(myOwner, otherOwners);
             findTeamOwners(myOwner, otherOwners);
-            // updateLocations(teamOwners.get(1).size());
-            updateLocations(teamOwners.get(1).size(), false);
+            if (inCircuit)
+                updateLocations(teamOwners.get(1).size(), false);
+            else 
+                updateLocations(teamOwners.get(1).size());
+            
             // TODO: this breaks with random players!! make sure the circuits and shapes are preserved
             this.path = shortestPath(ownerLocations.get(myOwner));
             simPrinter.println("It will take "  + myOwner.getNameAsString() + " " + this.path.size() + " rounds to get to target location");
@@ -175,13 +182,23 @@ public class Player extends dogs.sim.Player {
         // TODO: stay away from the random/deal with random
         updateRandos(myOwner, otherOwners);
         updateWaiting();
+        
 
         // TODO: do something while waiting for the rest to get into position. Maybe throw to the center? 
-        if (!waitToStart) {
+        if (!inCircuit && !waitToStart) {
             simPrinter.println(myOwner.getNameAsString() + " is at target location");
             directive.instruction = Instruction.CALL_SIGNAL;
             directive.signalWord = "here";
             return directive;
+        }
+
+        // IMPLEMENTING : when using the circuit 
+        if (inCircuit && getAllWaitingDogs(myOwner, otherOwners).size() != 0) {
+            while (true) {
+                if (distanceBetweenTwoPoints(ownerCycle.get(currentThrow).getLocation(), myOwner.getLocation()) <= 40)
+                    return throwToNext(myOwner, ownerCycle.get(currentThrow), nodeSeparation);
+                currentThrow = (currentThrow + 1)%ownerCycle.size();
+            }
         }
 
         // OPTION: change how far each node is from the other one in the isosceles triangle
@@ -324,6 +341,12 @@ public class Player extends dogs.sim.Player {
         return ret;
     }
 
+    private Directive throwToNext(Owner A, Owner B, float nodeSeparation) {
+        List<Owner> ownerList = new ArrayList<>();
+        ownerList.add(B);
+        return throwToNext(A, ownerList, nodeSeparation);
+    }
+
     private int findOwnerIndex(List<Owner> haystack, Owner needle) {
         for (int i = 0; i < haystack.size(); i++) {
             if (haystack.get(i).getNameAsString().equals(needle.getNameAsString()))
@@ -404,7 +427,7 @@ public class Player extends dogs.sim.Player {
     }
 
     private void updateLocations(int numOwners, boolean circuit) {
-        double dist = 39.9;     // use 40 for now
+        double dist = 39;     // use 40 for now
         double fromEdges = 10.0; // how far from the edges of the park 
         // OPTION: change dist and fromEdges to change the shape
         List<ParkLocation> optimalStartingLocations = formNetwork(numOwners, dist, fromEdges);
@@ -578,13 +601,13 @@ public class Player extends dogs.sim.Player {
             new ParkLocation(fromEdges + dist*3.5, 3*delt + fromEdges ), // 16
             new ParkLocation(fromEdges + dist*3, 4*delt + fromEdges ), // 17
             new ParkLocation(fromEdges + dist, 4*delt + fromEdges ), // 18
-            new ParkLocation(fromEdges + dist*3.5, delt + fromEdges ), // 19
+            new ParkLocation(fromEdges + dist*3.5, delt + fromEdges), // 19
             new ParkLocation(fromEdges, 4*delt + fromEdges ), // 20
-            new ParkLocation(fromEdges + dist*3.5, 4*delt + fromEdges ), // 21
+            new ParkLocation(fromEdges + dist*4, 4*delt + fromEdges), // 21
             new ParkLocation(fromEdges + dist/2, 5*delt + fromEdges ), // 22
             new ParkLocation(fromEdges + dist*1.5, 5*delt + fromEdges ), // 23
             new ParkLocation(fromEdges + dist*2.5, 5*delt + fromEdges ), // 24
-            new ParkLocation(fromEdges + dist*4, 5*delt + fromEdges ) // 25 
+            new ParkLocation(fromEdges + dist*3.5, 5*delt + fromEdges ) // 25 
         };
         for (int i = 1; i <= n; i++) {
             shape.add(layout[i-1]);
@@ -633,6 +656,25 @@ public class Player extends dogs.sim.Player {
             }
         }
         return closestOwner;
+    }
+
+    private List<Owner> getCloseOwners(Owner myOwner, List<Owner> otherOwners) {
+        double dist = Double.MAX_VALUE;
+        List<Owner> circuit = new ArrayList<>();
+        ParkLocation myLoc = myOwner.getLocation();
+        Owner closestOwner = new Owner();
+        for (Owner owner : otherOwners) {
+            ParkLocation otherLoc = owner.getLocation();
+            double newDist = distanceBetweenTwoPoints(myLoc, otherLoc);
+            if (newDist < dist) {
+                circuit = new ArrayList<>();
+                circuit.add(owner);
+                dist = newDist;
+            }
+            else if (newDist == dist)
+                circuit.add(owner);
+        }
+        return circuit;
     }
 
     /**
@@ -757,6 +799,15 @@ public class Player extends dogs.sim.Player {
             }
         });
         return waitingDogs;
+    }
+
+    private List<Dog> getAllWaitingDogs(Owner myOwner, List<Owner> otherOwners) {
+        List<Dog> mine = myDogsWaiting(myOwner);
+        List<Dog> theirs = getWaitingDogs(myOwner, otherOwners);
+        List<Dog> all = new ArrayList<>();
+        all.addAll(mine);
+        all.addAll(theirs);
+        return all;
     }
 
     private List<Dog> myDogsWaiting(Owner myOwner) { 
