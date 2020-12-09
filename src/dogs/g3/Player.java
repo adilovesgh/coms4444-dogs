@@ -265,7 +265,7 @@ public class Player extends dogs.sim.Player {
 				// TL, BL, TR, BR 
 				//System.out.println(ownBoundaries.toString());
 				//System.out.println(boundaries.toString());
-				collaborate(boundaries, ownBoundaries);
+				collaborate(ownBoundaries, boundaries);
 				double dist = Integer.MAX_VALUE;
 				Owner nearest = null;
 				for (Owner o : allOwners) {
@@ -466,7 +466,8 @@ public class Player extends dogs.sim.Player {
 	}
 
 	private void collaborate(List<OwnerName> ownBoundaries, List<OwnerName> otherBoundaries){
-		List<ParkLocation> possibleArea = new ArrayList<>();
+		updateGroup5Instances();
+		updateOwnInstances();
 		// TL, BL, TR, BR 
 		Owner TL = getOwner(ownBoundaries.get(0));
 		Owner BL = getOwner(ownBoundaries.get(1));
@@ -480,7 +481,8 @@ public class Player extends dogs.sim.Player {
 		Owner BLOther = getOwner(otherBoundaries.get(1));
 		Owner TROther = getOwner(otherBoundaries.get(2));
 		Owner BROther = getOwner(otherBoundaries.get(3));
-
+		System.out.println("otherBoundaries: " + otherBoundaries.toString());
+		System.out.println("ownBoundaries: " + ownBoundaries.toString());
 		double top= Math.min(TLOther.getLocation().getColumn(), TROther.getLocation().getColumn());
 		double bottom = Math.max(BLOther.getLocation().getColumn(), BROther.getLocation().getColumn());
 		double left = Math.min(TLOther.getLocation().getRow(), BLOther.getLocation().getRow());
@@ -496,13 +498,20 @@ public class Player extends dogs.sim.Player {
 			this.otherInstances = sortOwnersAlphabetically(this.otherInstances);
 			this.positions = mapOwnerToParkLocationCircle(this.otherInstances, this.center, this.radius);
 		} else {
-			double horizShift = BLOther.getLocation().getRow() - TL.getLocation().getRow();
-			double topShift = BLOther.getLocation().getColumn() - TL.getLocation().getColumn();
+			for(Owner o: this.group5Instances){
+				System.out.println(o.getNameAsString() + " " + o.getLocationAsString());
+			}
+			//System.out.println(this.group5Instances);
+			System.out.println("BLOther: " + BLOther.getNameAsString());
+			System.out.println("TL: " + TL.getNameAsString());
+			double horizShift = BLOther.getLocation().getRow() - TL.getLocation().getRow() - 20;
+			double topShift = BLOther.getLocation().getColumn() - TL.getLocation().getColumn() + 40;
 
 			System.out.println(topShift + " -> " + horizShift);
-			this.center.setColumn(this.center.getColumn() - topShift);
+			this.center.setColumn(this.center.getColumn() + topShift);
 			this.center.setRow(this.center.getRow() - horizShift);
 			System.out.println(this.positions.toString());
+			System.out.println(this.center.toString());
 			this.otherInstances = sortOwnersAlphabetically(this.otherInstances);
 			this.positions = mapOwnerToParkLocationCircle(this.otherInstances, this.center, this.radius);
 			System.out.println(this.positions.toString());
