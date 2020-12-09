@@ -78,6 +78,8 @@ public class Player extends dogs.sim.Player {
 		Directive directive = new Directive();
 		List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
 
+		System.out.println("current owner: " + myOwner.getNameAsString());
+
 		switch (state){
 			case FIRST_ROUND:
 				directive.signalWord = OUR_TEAM_SIGNAL;
@@ -239,7 +241,6 @@ public class Player extends dogs.sim.Player {
 		//column 2 base point
 		Double rowBase2 = row + CLONE_DISTANCE/2;
 		Double colBase2 = column + (CLONE_DISTANCE/2)*Math.tan(Math.toRadians(60.0));
-		//System.out.println("tan is " + Math.tan(Math.toRadians(60.0)));
 		
 		//add first and second base points to output array
 		List<Double> secondRowBase = new ArrayList<>();
@@ -287,21 +288,29 @@ public class Player extends dogs.sim.Player {
 				}
 				//if so, add to the current extra row
 				else {
-					double newOffset = currInd*CLONE_DISTANCE;
-					double newRow = newOffset + row;
+					//double newOffset = currInd*CLONE_DISTANCE;
+					double newRowOffset = (Math.floorDiv(currInd,2))*CLONE_DISTANCE;
+					//double newRow = newOffset + row;
 
-					//if even level
-					if(level % 2 == 0) {
-						newRow += CLONE_DISTANCE/2;
-					}
+					double newRow;
+					double newCol;
 
 					double colOffset = (level-1)*(CLONE_DISTANCE/2)*Math.tan(Math.toRadians(60.0));
-					double newCol = colOffset + column;
+					//double newCol = colOffset + column;
+
+					if(currInd%2 == 0) {
+						newRow = row + newRowOffset;
+						newCol = column + colOffset;
+					}
+					else {
+						newRow = rowBase2 + newRowOffset;
+						newCol = colBase2 + colOffset;
+					}
 
 					//transition to new row
 					if(newRow >= 200) {
 						currInd = 0;
-						level++;
+						level += 2;
 						i--;
 					}
 					else {
@@ -423,6 +432,8 @@ public class Player extends dogs.sim.Player {
 	}
 
 	private Owner pickReceivingClone(List<Owner> otherOwners){
+		System.out.println("Herreee");
+		System.out.println(currentPartners);
 
 		for (Owner otherOwner : otherOwners){
 			if(currentPartners.contains(otherOwner.getNameAsString()))
