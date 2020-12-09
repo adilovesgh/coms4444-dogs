@@ -519,7 +519,7 @@ public class Player extends dogs.sim.Player {
 
 	private boolean checkOverload(List<Dog> waitingDogs) {
 		if (waitingDogs.size() > 6) {
-			System.out.println("Overload1");
+			//System.out.println("Overload1");
 			return true;
 		}
 		int overloaded = 0; 
@@ -530,7 +530,7 @@ public class Player extends dogs.sim.Player {
 		}
 
 		if (overloaded > 2) {
-			System.out.println("Overload2");
+			//System.out.println("Overload2");
 			return true;
 		}
 		return false; 
@@ -550,13 +550,13 @@ public class Player extends dogs.sim.Player {
 		Owner BLOther = getOwner(otherBoundaries.get(1));
 		Owner TROther = getOwner(otherBoundaries.get(2));
 		Owner BROther = getOwner(otherBoundaries.get(3));
-		System.out.println("otherBoundaries: " + otherBoundaries.toString());
-		System.out.println("ownBoundaries: " + ownBoundaries.toString());
+		// System.out.println("otherBoundaries: " + otherBoundaries.toString());
+		// System.out.println("ownBoundaries: " + ownBoundaries.toString());
 		double top= Math.min(TLOther.getLocation().getColumn(), TROther.getLocation().getColumn());
 		double bottom = Math.max(BLOther.getLocation().getColumn(), BROther.getLocation().getColumn());
 		double left = Math.min(TLOther.getLocation().getRow(), BLOther.getLocation().getRow());
 		double right = Math.max(TROther.getLocation().getRow(), BROther.getLocation().getRow());
-		System.out.println("sizeVert: " + sizeVert + " top: " + top + " radius: " + this.radius + " other: " + TLOther.getLocation().getRow() + " BL: " + BL.getLocation().getRow());
+		//System.out.println("sizeVert: " + sizeVert + " top: " + top + " radius: " + this.radius + " other: " + TLOther.getLocation().getRow() + " BL: " + BL.getLocation().getRow());
 		if(top - sizeVert > 40){
 			double horizShift = BLOther.getLocation().getRow() - TL.getLocation().getRow() - 20;
 			double topShift = BLOther.getLocation().getColumn() - TL.getLocation().getColumn() + 40;
