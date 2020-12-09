@@ -144,7 +144,7 @@ public class Player extends dogs.sim.Player {
                             count++;
                         }
                     }
-                    if (count == 1 || round > 250)
+                    if (count == 1 || round > 150)
                         g4inPositionFirst = false;
                     return directive;
                 }
