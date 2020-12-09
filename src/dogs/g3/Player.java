@@ -202,8 +202,8 @@ public class Player extends dogs.sim.Player {
 				int unassignedOwners = alphabeticalOwners.size();
 				int preferredGroupSize = 4;
 				int minGroupSize = 3;
-				double rowLocation = 85.0;
-				double colLocation = 85.0;
+				double rowLocation = 25.0;
+				double colLocation = 25.0;
 				int row = 1;
 				int col = 1;
 				// System.out.println("END OF R6 1 " + this.otherInstances.size());
@@ -395,9 +395,9 @@ public class Player extends dogs.sim.Player {
 				directive.instruction = Instruction.THROW_BALL;
 				directive.dogToPlayWith = sortedDogs.get(0);
 
-				if ((directive.dogToPlayWith.getBreed() == Breed.LABRADOR
-						|| directive.dogToPlayWith.getBreed() == Breed.POODLE) && this.group5Instances.size() > 0) {
+				if (checkOverload(sortedDogs) && this.group5Instances.size() > 0) {
 					simPrinter.println("Reached");
+
 					Owner required = null;
 					List<OwnerName> g5OwnerNames = new LinkedList<OwnerName>();
 
@@ -405,6 +405,40 @@ public class Player extends dogs.sim.Player {
 						for (Owner owner : otherOwners) {
 							simPrinter.println("Reached2");
 							if (owner.getNameAsEnum() == g5owner.getNameAsEnum()
+									&& distanceBetweenOwners(myOwner, owner) <= 40.0) {
+								required = owner;
+								break;
+							}
+						}
+					}
+
+					if (required != null) {
+						simPrinter.println("Reached 2");
+
+						Double ballRow = required.getLocation().getRow();
+						Double ballColumn = required.getLocation().getColumn();
+						ParkLocation location = getAdjustedPath(myOwner.getLocation(), required.getLocation(),
+								directive.dogToPlayWith);
+						Random r = new Random();
+						count += 1;
+						// simPrinter.println(myOwner.getNameAsString() + " " + sortedDogs.size());
+						// simPrinter.println(throwToOwnerName + " from " + myOwner.getNameAsString());
+						directive.parkLocation = new ParkLocation(location.getRow(), location.getColumn());
+						return directive;
+					}
+
+				}
+
+				if (checkOverload(sortedDogs) && this.group4Instances.size() > 0) {
+					simPrinter.println("Reached");
+
+					Owner required = null;
+					List<OwnerName> g4OwnerNames = new LinkedList<OwnerName>();
+
+					for (Owner g4owner : this.group4Instances) {
+						for (Owner owner : otherOwners) {
+							simPrinter.println("Reached2");
+							if (owner.getNameAsEnum() == g4owner.getNameAsEnum()
 									&& distanceBetweenOwners(myOwner, owner) <= 40.0) {
 								required = owner;
 								break;
@@ -442,6 +476,7 @@ public class Player extends dogs.sim.Player {
 						neighbors.add(owner);
 					}
 				}
+				
 				Owner requiredOwner = getLeastBusyNeighbor(neighbors, this.allDogs, this.graph);
 				if (requiredOwner == null) {
 					Directive d = throwRandomly();
@@ -456,15 +491,14 @@ public class Player extends dogs.sim.Player {
 				 * Owner requiredOwner = null; for (Owner throwOwner: this.otherOwners) { if
 				 * (throwOwner.getNameAsEnum() == throwToOwnerName) { requiredOwner =
 				 * throwOwner; break; } }
-				 */
+				*/
 
 				Double ballRow = requiredOwner.getLocation().getRow();
 				Double ballColumn = requiredOwner.getLocation().getColumn();
 				ParkLocation location = getAdjustedPath(myOwner.getLocation(), requiredOwner.getLocation(),
 						directive.dogToPlayWith);
-				simPrinter.println(ballRow + " " + location.getRow());
-				simPrinter.println(ballColumn + " " + location.getColumn());
 				Random r = new Random();
+				
 				count += 1;
 				// simPrinter.println(myOwner.getNameAsString() + " " + sortedDogs.size());
 				// simPrinter.println(throwToOwnerName + " from " + myOwner.getNameAsString());
@@ -481,6 +515,25 @@ public class Player extends dogs.sim.Player {
 		}
 		Directive directive = new Directive();
 		return directive;
+	}
+
+	private boolean checkOverload(List<Dog> waitingDogs) {
+		if (waitingDogs.size() > 6) {
+			System.out.println("Overload1");
+			return true;
+		}
+		int overloaded = 0; 
+		for (Dog dog: waitingDogs) {
+			if (dog.getExerciseTimeRemaining() < 5.0) {
+				overloaded += 1;
+			}
+		}
+
+		if (overloaded > 2) {
+			System.out.println("Overload2");
+			return true;
+		}
+		return false; 
 	}
 
 	private void collaborate(List<OwnerName> ownBoundaries, List<OwnerName> otherBoundaries){
