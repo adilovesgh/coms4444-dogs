@@ -385,8 +385,9 @@ public class Player extends dogs.sim.Player {
         double fromEdges = 10.0; // how far from the edges of the park 
         // OPTION: change dist and fromEdges to change the shape
         List<ParkLocation> optimalStartingLocations = getOptimalLocationShape(numOwners, dist, fromEdges);
+        List<Owner> g1 = teamOwners.get(1);
    
-        Collections.sort(nonRandos, new Comparator<Owner>() {
+        Collections.sort(g1, new Comparator<Owner>() {
             @Override public int compare(Owner o1, Owner o2) {
                 return o1.getNameAsString().compareTo(o2.getNameAsString());
             }
@@ -394,8 +395,8 @@ public class Player extends dogs.sim.Player {
 
         // add cycle to array and to tracker for locations 
         for (int i = 0; i < numOwners; i++) {
-            ownerLocations.put(nonRandos.get(i), optimalStartingLocations.get(i));
-            ownerCycle.add(nonRandos.get(i));
+            ownerLocations.put(g1.get(i), optimalStartingLocations.get(i));
+            ownerCycle.add(g1.get(i));
         }
         // OPTION: change the cycle direction
         // Collections.reverse(ownerCycle);
