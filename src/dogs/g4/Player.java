@@ -99,9 +99,9 @@ public class Player extends dogs.sim.Player {
 
         updateOwnersList(otherOwners);
 
-        if (this.coOwners.isEmpty() && this.g1Owners.size() <= 1) return oneG4Alone(myOwner, otherOwners);
+        if (this.coOwners.isEmpty() && this.g1Owners.size() <= 1 && this.g2Owners.size() <=1) return oneG4Alone(myOwner, otherOwners);
+        else if (this.g2Owners.size() > 0) return multipleG4MultipleG2(myOwner, otherOwners, round);
         else if (this.coOwners.isEmpty() && this.g1Owners.size() > 1) return oneG4MultipleG1(myOwner, otherOwners, round);
-        else if (this.coOwners.size() > 1 && this.g2Owners.size() > 1) return multipleG4MultipleG2(myOwner, otherOwners, round);
         else return multipleG4(myOwner, otherOwners, round);
     }
 
@@ -208,7 +208,7 @@ public class Player extends dogs.sim.Player {
     private Directive multipleG4MultipleG2(Owner myOwner, List<Owner> otherOwners, Integer round) {
         Directive myDirective = new Directive();
 
-        if (!this.g2Owners.isEmpty() || !this.g3Owners.isEmpty() || !this.g5Owners.isEmpty() || !this.g1Owners.isEmpty()) this.centralized = true;
+        if (!this.g2Owners.isEmpty() || !this.g3Owners.isEmpty() || !this.g5Owners.isEmpty() || this.g1Owners.size() > 1) this.centralized = true;
         List<Owner> tmpOwners = new ArrayList<>(this.coOwners);
         tmpOwners.addAll(this.g2Owners);
         Comparator<Owner> byName = (Owner o1, Owner o2) -> o1.getNameAsString().compareTo(o2.getNameAsString());
