@@ -47,6 +47,11 @@ public class PlayerGraph {
         this.owners.put(owner.getNameAsEnum(), node);
     } 
 
+    public PlayerNode getNode(Owner owner){
+        return this.owners.get(owner.getNameAsEnum());
+    }
+
+
     public void addConnection(Owner owner1, Owner owner2) {
         addConnection(owner1, owner2, false);
     }
@@ -81,10 +86,12 @@ public class PlayerGraph {
 class PlayerNode{
     OwnerName name;
     List<OwnerName> connectedOwners;
+    List<Dog> parkedDogs;
 
     public PlayerNode(Owner owner) {
         this.name = owner.getNameAsEnum();
         this.connectedOwners = new LinkedList<OwnerName>();
+        this.parkedDogs = new ArrayList<>();
     }
 
     public void addNeighbor(Owner owner) {
@@ -93,5 +100,13 @@ class PlayerNode{
 
     public List<OwnerName> getConnections() {
         return this.connectedOwners;
+    }
+
+    public void addParkedDog(Dog d) {
+        this.parkedDogs.add(d);
+    }
+
+    public List<Dog> getParkedDogs() {
+        return this.parkedDogs;
     }
 }

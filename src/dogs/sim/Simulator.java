@@ -44,7 +44,7 @@ public class Simulator {
 	private static Map<Dog, Ball> dogToBallMap;
 	private static Random random;
 	
-	// Simulator inputs
+	// Simulator input
 	private static int seed = 42;
 	private static int rounds = 3600;
 	private static int numDogsPerOwner = 1;

@@ -25,9 +25,12 @@ public class Player extends dogs.sim.Player {
 	private List<Dog> myDogs;
 	private Integer round;
 	private Owner myOwner;
-	private List<Owner> myOtherInstances;
+	// private List<Owner> myOtherInstances;
 	private List<Owner> otherInstances;
 	private List<Owner> group5Instances;
+	private List<Owner> group4Instances;
+	private List<Owner> group2Instances;
+	private List<Owner> group1Instances;
 	HashMap<String, ParkLocation> positions;
 	private List<Dog> allDogs;
 	HashMap<String, String> nextOwners;
@@ -38,7 +41,6 @@ public class Player extends dogs.sim.Player {
 	private ParkLocation center;
 	private Double MAX_THROW_DIST = 40.0;
 	private Double MAX_MOVE_DIST = 5.0;
-
 	private int radius;
 
 	/**
@@ -66,15 +68,15 @@ public class Player extends dogs.sim.Player {
 				Owner current = owners.get(i);
 				double x = center.getRow() + radius * Math.cos((2 * Math.PI * i) / owners.size() + Math.PI / 4);
 				double y = center.getColumn() + radius * Math.sin((2 * Math.PI * i) / owners.size() + Math.PI / 4);
-				ownerToLocation.put(current.getNameAsString(), new ParkLocation(x, y));
+				ownerToLocation.put(current.getNameAsString(), new ParkLocation(y, x));
 			}
 		}
 		return ownerToLocation;
 	}
 
 	private void addNodesToGraph(List<Owner> myOwners, List<Owner> otherGroupOwners) {
-		for (Owner o1: myOwners) {
-			for (Owner o2: otherGroupOwners) {
+		for (Owner o1 : myOwners) {
+			for (Owner o2 : otherGroupOwners) {
 				simPrinter.println("Here");
 				if ((o1.getNameAsEnum() != o2.getNameAsEnum()) && (distanceBetweenOwners(o1, o2) <= 40.0)) {
 					simPrinter.println(o1.getNameAsEnum());
@@ -93,7 +95,6 @@ public class Player extends dogs.sim.Player {
 	private PlayerGraph buildPlayerGraph(List<Owner> owners) {
 
 		PlayerGraph graph = new PlayerGraph(owners);
-		// simPrinter.println(owners.size());
 		// add an edge between each pair of owners within 40 meters of each other
 		for (Owner o1 : owners) {
 			for (Owner o2 : owners) {
@@ -162,31 +163,30 @@ public class Player extends dogs.sim.Player {
 			allOwners.add(myOwner);
 			sortOwners();
 			Directive directive = new Directive();
-			// if(round == 6){
-			// System.out.println(getOtherOwnersSignals(otherOwners).toString());
-			// }
+
 			if (round == 1) {
 				directive.instruction = Instruction.CALL_SIGNAL;
 				directive.signalWord = this.identification_signal;
 				return directive;
 			} else if (round == 6) {
-				this.group5Instances = getOtherGroupInstances(allOwners);
-				this.otherInstances = getOtherInstancesSignals(allOwners);
-				//System.out.println(this.otherInstances.toString());
+				getOtherGroupInstances(allOwners);
+				this.otherInstances = getOtherInstancesSignals(otherOwners);
 				for (Owner o : this.otherInstances) {
 					if (this.otherOwners.contains(o)) {
-						this.otherOwners.remove(o); //remove other instances of group 3 from otherOwners
+						this.otherOwners.remove(o); // remove other instances of group 3 from otherOwners
 					}
 				}
 
-				// System.out.println(this.otherInstances.size());
-				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(this.otherInstances);
+				List<Owner> temp2 = new ArrayList<>();
+				for (Owner o : this.otherInstances) {
+					temp2.add(o);
+				}
+				List<Owner> alphabeticalOwners = sortOwnersAlphabetically(temp2);
 				List<Owner> temp = new LinkedList<Owner>();
 				temp.addAll(alphabeticalOwners);
 				double radius = 40 * (this.otherInstances.size() - 1);
 				radius /= (double) (2.0 * Math.PI);
-				// System.out.println(radius + " " + allOwners.size());
-				radius = 25;
+				radius = 20;
 
 				HashMap<String, ParkLocation> currentPositions = new HashMap<String, ParkLocation>();
 
@@ -197,10 +197,7 @@ public class Player extends dogs.sim.Player {
 				double colLocation = 85.0;
 				int row = 1;
 				int col = 1;
-
 				while (unassignedOwners >= minGroupSize) {
-					// simPrinter.println("Iteration");
-					// simPrinter.println(unassignedOwners);
 					List<Owner> currentRound = new LinkedList<Owner>();
 
 					int limit = preferredGroupSize;
@@ -213,9 +210,7 @@ public class Player extends dogs.sim.Player {
 						alphabeticalOwners.remove(0);
 						unassignedOwners -= 1;
 					}
-					// simPrinter.println("coordinates");
-					// simPrinter.println(rowLocation);
-					// simPrinter.println(colLocation);
+
 					HashMap<String, ParkLocation> tempPositions = mapOwnerToParkLocationCircle(currentRound,
 							new ParkLocation(rowLocation, colLocation), (int) radius);
 					currentPositions.putAll(tempPositions);
@@ -230,29 +225,40 @@ public class Player extends dogs.sim.Player {
 							(int) radius);
 				}
 
-				
-
 				this.positions = currentPositions;
 				this.graph = buildPlayerGraph(temp);
 				this.graph.graphType = this.graph.getGraphType(this.otherInstances);
-				// if(this.graph.graphType == GraphType.SPOKE){
-				// numCenterPlayers = (int) Math.ceil((double) radius / 51.0);
-				// radius = 30 * (this.otherOwners.size()-numCenterPlayers);
-				// radius /= (double) (2.0 * Math.PI);
-				// }
+
 				this.center = new ParkLocation(25.0, 25.0);
 				this.radius = (int) radius;
 
 				directive.instruction = Instruction.CALL_SIGNAL;
 				directive.signalWord = this.identification_signal;
 				return directive;
-			}
-			else if (this.round == 501) {
+			} else if (this.round == 501) {
+				updateOtherGroupInstances();
+				updateOwnInstances();
+
 				List<OwnerName> myOwnerInstances = new ArrayList<>();
 				for (Owner me : this.otherInstances) {
 					myOwnerInstances.add(me.getNameAsEnum());
 				}
+				List<OwnerName> boundaries = new ArrayList<>();
+				List<OwnerName> ownBoundaries = new ArrayList<>();
 				GraphType g = recognizeFormation();
+				ownBoundaries = determineShapeBoundaries(this.otherInstances);
+
+				if (this.group5Instances.size() > 0) {
+					boundaries = determineShapeBoundaries(this.group5Instances);
+					collaborate(ownBoundaries, boundaries);
+				} 
+
+				else if(this.group4Instances.size() > 0){
+					boundaries = determineShapeBoundaries(this.group4Instances);
+					collaborate(ownBoundaries, boundaries);
+				}
+				// TL, BL, TR, BR 
+
 				double dist = Integer.MAX_VALUE;
 				Owner nearest = null;
 				for (Owner o : allOwners) {
@@ -268,56 +274,21 @@ public class Player extends dogs.sim.Player {
 
 				simPrinter.println("Size");
 				simPrinter.println(this.group5Instances.size());
-				// this.addNodesToGraph(this.otherOwners, this.group5Instances);
 				directive.instruction = Instruction.CALL_SIGNAL;
 				directive.signalWord = "separate";
 
-				if (g == GraphType.GRID) {
-//					System.out.println("GRID");
-					
-				} else {
-//					System.out.println("POLYGON");
-//					if (nearest.getLocation().getRow() < this.center.getRow()) {
-//						if (nearest.getLocation().getRow() < 150) {
-/*							System.out.println(this.center);
-							System.out.println("Here");
-							this.center = new ParkLocation(nearest.getLocation().getRow() - this.radius,
-							nearest.getLocation().getColumn());
-							System.out.println(this.positions.toString());
-							this.positions = mapOwnerToParkLocationCircle(sortOwnersAlphabetically(this.otherInstances),
-							this.center, this.radius);
-							System.out.println(this.positions.toString());
-/*						}
-					} else {
-						if (nearest.getLocation().getRow() > 10) {
-
-						}
-					} */
-				}
-
 				return directive;
 			}
-			// System.out.println(this.graph.graphType);
 			ParkLocation currentLocation = myOwner.getLocation();
 			ParkLocation desiredLocation = this.positions.get(myOwner.getNameAsString());
 
-			if (Math.abs(currentLocation.getRow() - 
-				desiredLocation.getRow()) > 1.0
+			if (Math.abs(currentLocation.getRow() - desiredLocation.getRow()) > 1.0
 					|| Math.abs(currentLocation.getColumn() - desiredLocation.getColumn()) > 1.0) {
 				directive.instruction = Instruction.MOVE;
 				ParkLocation next = getNextLocation(currentLocation, desiredLocation);
 				directive.parkLocation = next;
 				return directive;
 			}
-
-			/*
-			 * if(round <= 151) { directive.instruction = Instruction.MOVE;
-			 * directive.parkLocation = new ParkLocation(myOwner.getLocation().getRow() + 2,
-			 * myOwner.getLocation().getColumn() + 2); return directive; } else if (round <=
-			 * 271) { directive.instruction = Instruction.MOVE; directive.parkLocation = new
-			 * ParkLocation(myOwner.getLocation().getRow(),
-			 * myOwner.getLocation().getColumn() + 2); return directive; }
-			 */
 
 			// get waiting dogs and separate into others' dogs and my own dogs
 			List<Dog> waitingDogs = getWaitingDogs(myOwner, otherOwners);
@@ -331,35 +302,55 @@ public class Player extends dogs.sim.Player {
 					ownedByMe.add(dog);
 				}
 			}
-			// Owner alice = null;
-			// for(int i = 0; i < this.otherOwners.size(); i++){
-			// if(this.otherOwners.get(i).getNameAsEnum() == OwnerName.ALICE){
-			// alice = this.otherOwners.get(i);
-			// }
-			// }
-			// System.out.println(this.graph.getConnections(alice).toString());
+
+			//check if any dogs can be parked
+			if(myOwner.getNameAsEnum() == OwnerName.DAVE){
+				simPrinter.println("Dave's dogs:" + this.myDogs.toString());
+			}
+			for (Dog d : myOwner.getDogs()){
+				if(myOwner.getNameAsEnum() == OwnerName.DAVE){
+					simPrinter.println("Dave: " + d.getRealID());
+					simPrinter.println("Dog object: " + d);
+					simPrinter.println("Breed: " + d.getBreed());
+					simPrinter.println("Is waiting for Dave? " + d.isWaitingForOwner(myOwner));
+					simPrinter.println("Exercise remaining: " + d.getExerciseTimeRemaining());
+					simPrinter.println("Dave's parked dogs: " + this.graph.getNode(myOwner).getParkedDogs());
+				}
+				if (d.isWaitingForOwner(myOwner) && d.getExerciseTimeRemaining()==0.0 && !this.graph.getNode(myOwner).getParkedDogs().contains(d)){
+					Dog dogToPark = d;
+					List<OwnerName> neighborNames = this.graph.getConnections(myOwner);
+					List<Owner> neighbors = new ArrayList<>();
+					for (Owner owner : this.otherOwners) {
+						if (neighborNames.contains(owner.getNameAsEnum())) {
+							neighbors.add(owner);
+						}
+					}
+					directive = parkDog(myOwner, neighbors, dogToPark);
+					this.graph.getNode(myOwner).addParkedDog(dogToPark);
+					return directive;
+				}
+			}
 
 			List<Dog> sortedDogs = sortDogsByRemainingWaitTime(waitingDogs);
 			for (Dog dog : sortedDogs) {
 				simPrinter.println(dog.getWaitingTimeRemaining());
 			}
 
-			// out.println(waitingDogs.size() + " " + sortedDogs.size() + " " +
-			// sortedDogsNotMine.size() + " " + notOwnedByMe.size() + " " +
-			// ownedByMe.size());
 			if (!sortedDogs.isEmpty()) {
 				directive.instruction = Instruction.THROW_BALL;
 				directive.dogToPlayWith = sortedDogs.get(0);
 
-				if ((directive.dogToPlayWith.getBreed() == Breed.LABRADOR || directive.dogToPlayWith.getBreed() == Breed.POODLE) && this.group5Instances.size() > 0) {
+				if (checkOverload(sortedDogs) && this.group5Instances.size() > 0) {
 					simPrinter.println("Reached");
+
 					Owner required = null;
 					List<OwnerName> g5OwnerNames = new LinkedList<OwnerName>();
 
-					for (Owner g5owner: this.group5Instances) {
-						for (Owner owner: otherOwners) {
+					for (Owner g5owner : this.group5Instances) {
+						for (Owner owner : otherOwners) {
 							simPrinter.println("Reached2");
-							if (owner.getNameAsEnum() == g5owner.getNameAsEnum() && distanceBetweenOwners(myOwner, owner) <= 40.0)  {
+							if (owner.getNameAsEnum() == g5owner.getNameAsEnum()
+									&& distanceBetweenOwners(myOwner, owner) <= 40.0) {
 								required = owner;
 								break;
 							}
@@ -375,12 +366,42 @@ public class Player extends dogs.sim.Player {
 								directive.dogToPlayWith);
 						Random r = new Random();
 						count += 1;
-						// simPrinter.println(myOwner.getNameAsString() + " " + sortedDogs.size());
-						// simPrinter.println(throwToOwnerName + " from " + myOwner.getNameAsString());
 						directive.parkLocation = new ParkLocation(location.getRow(), location.getColumn());
 						return directive;
 					}
-					
+
+				}
+
+				if (checkOverload(sortedDogs) && this.group4Instances.size() > 0) {
+					simPrinter.println("Reached");
+
+					Owner required = null;
+					List<OwnerName> g4OwnerNames = new LinkedList<OwnerName>();
+
+					for (Owner g4owner : this.group4Instances) {
+						for (Owner owner : otherOwners) {
+							simPrinter.println("Reached2");
+							if (owner.getNameAsEnum() == g4owner.getNameAsEnum()
+									&& distanceBetweenOwners(myOwner, owner) <= 40.0) {
+								required = owner;
+								break;
+							}
+						}
+					}
+
+					if (required != null) {
+						simPrinter.println("Reached 2");
+
+						Double ballRow = required.getLocation().getRow();
+						Double ballColumn = required.getLocation().getColumn();
+						ParkLocation location = getAdjustedPath(myOwner.getLocation(), required.getLocation(),
+								directive.dogToPlayWith);
+						Random r = new Random();
+						count += 1;
+						directive.parkLocation = new ParkLocation(location.getRow(), location.getColumn());
+						return directive;
+					}
+
 				}
 
 				if (sortedDogs.get(0).getWaitingTimeRemaining() > 19) {
@@ -388,40 +409,28 @@ public class Player extends dogs.sim.Player {
 					directive.dogToPlayWith = sortedExerciseDogs.get(0);
 				}
 				List<OwnerName> neighborNames = this.graph.getConnections(myOwner);
-
-				// throw the ball toward the least occupied neighbor
 				List<Owner> neighbors = new ArrayList<>();
 				for (Owner owner : this.otherOwners) {
 					if (neighborNames.contains(owner.getNameAsEnum())) {
 						neighbors.add(owner);
 					}
 				}
-				Owner requiredOwner = getLeastBusyNeighbor(neighbors, this.allDogs);
+				
+				Owner requiredOwner = getLeastBusyNeighbor(neighbors, this.allDogs, this.graph);
 				if (requiredOwner == null) {
 					Directive d = throwRandomly();
-					// System.out.println(d.instruction.toString() + " " +
-					// d.parkLocation.toString());
 					return throwRandomly();
 				}
 				OwnerName throwToOwnerName = requiredOwner.getNameAsEnum();
 				simPrinter.println("Throwing To " + throwToOwnerName + "round " + round);
 
-				/*
-				 * Owner requiredOwner = null; for (Owner throwOwner: this.otherOwners) { if
-				 * (throwOwner.getNameAsEnum() == throwToOwnerName) { requiredOwner =
-				 * throwOwner; break; } }
-				 */
-
 				Double ballRow = requiredOwner.getLocation().getRow();
 				Double ballColumn = requiredOwner.getLocation().getColumn();
 				ParkLocation location = getAdjustedPath(myOwner.getLocation(), requiredOwner.getLocation(),
 						directive.dogToPlayWith);
-				simPrinter.println(ballRow + " " + location.getRow());
-				simPrinter.println(ballColumn + " " + location.getColumn());
 				Random r = new Random();
+				
 				count += 1;
-				// simPrinter.println(myOwner.getNameAsString() + " " + sortedDogs.size());
-				// simPrinter.println(throwToOwnerName + " from " + myOwner.getNameAsString());
 				directive.parkLocation = new ParkLocation(location.getRow(), location.getColumn());
 				return directive;
 			}
@@ -430,11 +439,263 @@ public class Player extends dogs.sim.Player {
 			directive.instruction = Instruction.NOTHING;
 			return directive;
 		} catch (Exception e) {
-			// System.out.println(e.toString());
 			e.printStackTrace();
 		}
 		Directive directive = new Directive();
 		return directive;
+	}
+
+	private boolean checkOverload(List<Dog> waitingDogs) {
+
+		if (waitingDogs.size() > 6) {
+			return true; 
+		}
+		
+		int overloaded = 0; 
+		for (Dog dog: waitingDogs) {
+			if (dog.getWaitingTimeRemaining() < 5.0) {
+				overloaded += 1;
+			}
+		}
+
+		if (overloaded > 2) {
+			return true;
+		}
+		return false; 
+	}
+
+	private void collaborate(List<OwnerName> ownBoundaries, List<OwnerName> otherBoundaries){
+		// TL, BL, TR, BR 
+		Owner TL = getOwner(ownBoundaries.get(0));
+		Owner BL = getOwner(ownBoundaries.get(1));
+		Owner TR = getOwner(ownBoundaries.get(2));
+		Owner BR = getOwner(ownBoundaries.get(3));
+
+		double sizeVert = Math.max(BL.getLocation().getColumn() - TL.getLocation().getColumn(), BR.getLocation().getColumn() -TR.getLocation().getColumn());
+		double sizeHoriz = Math.max(BR.getLocation().getRow() - BL.getLocation().getRow(), TR.getLocation().getRow() - TL.getLocation().getRow());
+		
+		Owner TLOther = getOwner(otherBoundaries.get(0));
+		Owner BLOther = getOwner(otherBoundaries.get(1));
+		Owner TROther = getOwner(otherBoundaries.get(2));
+		Owner BROther = getOwner(otherBoundaries.get(3));
+
+		double top= Math.min(TLOther.getLocation().getColumn(), TROther.getLocation().getColumn());
+		double bottom = Math.max(BLOther.getLocation().getColumn(), BROther.getLocation().getColumn());
+		double left = Math.min(TLOther.getLocation().getRow(), BLOther.getLocation().getRow());
+		double right = Math.max(TROther.getLocation().getRow(), BROther.getLocation().getRow());
+		if(top - sizeVert > 40){
+			double horizShift = BLOther.getLocation().getRow() - TL.getLocation().getRow() - 20;
+			double topShift = BLOther.getLocation().getColumn() - TL.getLocation().getColumn() + 40;
+
+			this.center.setColumn(this.center.getColumn() + topShift);
+			this.center.setRow(this.center.getRow() + horizShift);
+
+			List<Owner> alphabeticalOwners = sortOwnersAlphabetically(this.otherInstances);
+			
+			HashMap<String, ParkLocation> currentPositions = new HashMap<String, ParkLocation>();
+
+			int unassignedOwners = alphabeticalOwners.size();
+			int preferredGroupSize = 4;
+			int minGroupSize = 3;
+			double rowLocation = this.center.getRow();
+			double colLocation = this.center.getColumn();
+			int row = 1;
+			int col = 1;
+			while (unassignedOwners >= minGroupSize) {
+				List<Owner> currentRound = new LinkedList<Owner>();
+
+				int limit = preferredGroupSize;
+				if (unassignedOwners - preferredGroupSize < minGroupSize) {
+					limit = unassignedOwners;
+				}
+
+				for (int i = 0; i < limit && unassignedOwners > 0; i++) {
+					currentRound.add(alphabeticalOwners.get(0));
+					alphabeticalOwners.remove(0);
+					unassignedOwners -= 1;
+				}
+
+				HashMap<String, ParkLocation> tempPositions = mapOwnerToParkLocationCircle(currentRound,
+						new ParkLocation(rowLocation, colLocation), this.radius);
+				currentPositions.putAll(tempPositions);
+				rowLocation += 3 * radius;
+				if (rowLocation > 200) {
+					rowLocation = 25;
+					colLocation += 3 * radius;
+				}
+			}
+			if (unassignedOwners > 0) {
+				currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, this.center,
+						this.radius);
+			}
+
+			this.positions = currentPositions;
+			
+		} else {
+			double horizShift = BLOther.getLocation().getRow() - TL.getLocation().getRow() - 20;
+			double topShift = BLOther.getLocation().getColumn() - TL.getLocation().getColumn() + 40;
+
+			this.center.setColumn(this.center.getColumn() + topShift);
+			this.center.setRow(this.center.getRow() - horizShift);
+
+			List<Owner> alphabeticalOwners = sortOwnersAlphabetically(this.otherInstances);
+			
+			HashMap<String, ParkLocation> currentPositions = new HashMap<String, ParkLocation>();
+
+			int unassignedOwners = alphabeticalOwners.size();
+			int preferredGroupSize = 4;
+			int minGroupSize = 3;
+			double rowLocation = this.center.getRow();
+			double colLocation = this.center.getColumn();
+			int row = 1;
+			int col = 1;
+			while (unassignedOwners >= minGroupSize) {
+				
+				List<Owner> currentRound = new LinkedList<Owner>();
+
+				int limit = preferredGroupSize;
+				if (unassignedOwners - preferredGroupSize < minGroupSize) {
+					limit = unassignedOwners;
+				}
+
+				for (int i = 0; i < limit && unassignedOwners > 0; i++) {
+					currentRound.add(alphabeticalOwners.get(0));
+					alphabeticalOwners.remove(0);
+					unassignedOwners -= 1;
+				}
+
+				HashMap<String, ParkLocation> tempPositions = mapOwnerToParkLocationCircle(currentRound,
+						new ParkLocation(rowLocation, colLocation), this.radius);
+				currentPositions.putAll(tempPositions);
+				rowLocation += 3 * radius;
+				if (rowLocation > 200) {
+					rowLocation = 25;
+					colLocation += 3 * radius;
+				}
+			}
+			if (unassignedOwners > 0) {
+				currentPositions = mapOwnerToParkLocationCircle(alphabeticalOwners, this.center,
+						this.radius);
+			}
+			this.positions = currentPositions;
+			
+		}
+
+	}
+
+	private Owner getOwner(OwnerName name){
+		for(Owner o: this.otherOwners){
+			if(o.getNameAsEnum() == name)
+				return o;
+		}
+		return null;
+	}
+
+	/**
+	* throw the ball for a dog that has completed exercise
+	* to an angle that does not block any edge
+	* @param myOwner 	current owner, owner of the dog
+	* @param neighbors  owners connected to myOwner in the graph
+	* @param dog 		the dog that has finished 30 min of exercise
+	* @return 			a Directive that throws the ball toward an open space
+	**/
+	private Directive parkDog(Owner myOwner, List<Owner> neighbors, Dog dog){
+		//first make sure the dog belongs to the owner and has finished exercise 
+
+		Directive directive = new Directive();
+		directive.instruction = Instruction.THROW_BALL;
+		directive.dogToPlayWith = dog;
+		
+		Integer num_neighbors = neighbors.size();
+		Double min_angle_diff = 61 * Math.PI / 180.0;
+		ParkLocation neighborLoc, myLoc, neighbor2Loc;
+		Double neighbor_angle, target_angle;
+		Boolean valid_angle = true;
+		simPrinter.println(num_neighbors);
+		switch(num_neighbors){
+			case 0:
+				directive = throwRandomly();
+				break;
+			default:
+				List<Double> neighbor_angles = new ArrayList<>();
+				simPrinter.println("Neighbor name: " + neighbors.get(0).getNameAsString());
+				for (int i=0; i<neighbors.size(); i++){
+					neighborLoc = neighbors.get(i).getLocation();
+					myLoc = myOwner.getLocation();
+					neighbor_angle = Math.atan2(neighborLoc.getRow()-myLoc.getRow(), neighborLoc.getColumn()-myLoc.getColumn());
+					simPrinter.println("Neighbor angle: " + neighbor_angle);
+					target_angle = neighbor_angle + min_angle_diff;
+					valid_angle = true;
+
+					//check if this angle is at least 60 degrees away from every other neighbor
+					for (int j=0; j<neighbors.size(); j++){
+						if (i == j){continue;}
+
+						neighbor2Loc = neighbors.get(j).getLocation();
+						Double neighbor2_angle = Math.atan2(neighbor2Loc.getRow()-myLoc.getRow(), neighbor2Loc.getColumn()-myLoc.getColumn());
+						if (Math.abs(neighbor2_angle - target_angle) < min_angle_diff){
+							valid_angle = false; //too close to one of the neighbors, invalid angle
+							break;
+						}
+					}
+
+					if (valid_angle){
+							simPrinter.println("Parking angle: " + target_angle);
+							Double dist = 40.0;
+							directive.parkLocation = new ParkLocation(myLoc.getRow() + dist*Math.sin(target_angle), myLoc.getColumn() + dist*Math.cos(target_angle));
+							directive.parkLocation = this.getValidLocation(directive.parkLocation);
+							break;
+					}
+				}
+				if (!valid_angle){
+					simPrinter.println("Parking dog in random direction...");
+					directive = throwRandomly();
+				}
+				break;
+		}
+		return directive;
+	}
+
+	private void updateOtherGroupInstances(){
+		for(int i = 0; i < this.group5Instances.size(); i++){
+			for(Owner o: this.otherOwners){
+				if(this.group5Instances.get(i).getNameAsEnum() == o.getNameAsEnum()){
+					this.group5Instances.set(i, o);
+				}
+			}
+		}
+		for(int i = 0; i < this.group4Instances.size(); i++){
+			for(Owner o: this.otherOwners){
+				if(this.group4Instances.get(i).getNameAsEnum() == o.getNameAsEnum()){
+					this.group4Instances.set(i, o);
+				}
+			}
+		}
+
+		for(int i = 0; i < this.group2Instances.size(); i++){
+			for(Owner o: this.otherOwners){
+				if(this.group2Instances.get(i).getNameAsEnum() == o.getNameAsEnum()){
+					this.group2Instances.set(i, o);
+				}
+			}
+		}
+		for(int i = 0; i < this.group1Instances.size(); i++){
+			for(Owner o: this.otherOwners){
+				if(this.group1Instances.get(i).getNameAsEnum() == o.getNameAsEnum()){
+					this.group1Instances.set(i, o);
+				}
+			}
+		}
+	}
+
+	private void updateOwnInstances() {
+		for (int i = 0; i < this.otherInstances.size(); i++) {
+			for (Owner o : this.otherOwners) {
+				if (this.otherInstances.get(i).getNameAsEnum() == o.getNameAsEnum()) {
+					this.otherInstances.set(i, o);
+				}
+			}
+		}
 	}
 
 	private List<String> getOtherOwnersSignals(List<Owner> otherOwners) {
@@ -446,19 +707,38 @@ public class Player extends dogs.sim.Player {
 	}
 
 	private List<Owner> getOtherGroupInstances(List<Owner> otherOwners) {
-		List<Owner> otherInstances = new ArrayList<>();
+		this.group5Instances = new ArrayList<>();
 		for (Owner otherOwner : otherOwners) {
 			if (otherOwner.getCurrentSignal().equals("Zyzzogeton")) {
-				otherInstances.add(otherOwner);
+				this.group5Instances.add(otherOwner);
 			}
 		}
-		return otherInstances;
+
+		this.group4Instances = new ArrayList<>();
+		for (Owner otherOwner : otherOwners) {
+			if (otherOwner.getCurrentSignal().equals("zythum")) {
+				this.group4Instances.add(otherOwner);
+			}
+		}
+		this.group2Instances = new ArrayList<>();
+		for (Owner otherOwner : otherOwners) {
+			if (otherOwner.getCurrentSignal().equals("ready")) {
+				this.group2Instances.add(otherOwner);
+			}
+		}
+		this.group1Instances = new ArrayList<>();
+		for (Owner otherOwner : otherOwners) {
+			if (otherOwner.getCurrentSignal().equals("papaya")) {
+				this.group1Instances.add(otherOwner);
+			}
+		}
+		return this.group5Instances;
 	}
 
 	private List<Owner> getOtherInstancesSignals(List<Owner> otherOwners) {
 		List<Owner> otherInstances = new ArrayList<>();
 		for (Owner otherOwner : otherOwners) {
-			if (otherOwner.getCurrentSignal().equals("three")) {
+			if (otherOwner.getCurrentSignal().equals(this.identification_signal)) {
 				otherInstances.add(otherOwner);
 			}
 		}
@@ -478,14 +758,10 @@ public class Player extends dogs.sim.Player {
 			for (Dog dog : otherOwner.getDogs()) {
 				if (dog.isWaitingForOwner(myOwner)) {
 					waitingDogs.add(dog);
-					// simPrinter.println("Found Other Dog Thats Not Ours " +
-					// dog.getOwner().getNameAsString() + " " + myOwner.getNameAsString());
-					// simPrinter.println(dog.getOwner().getNameAsString());
 					count += 1;
 				}
 			}
 		}
-		// System.out.println(myOwner.getNameAsString() + " " + count);
 		return waitingDogs;
 	}
 
@@ -516,6 +792,78 @@ public class Player extends dogs.sim.Player {
 		return GraphType.POLYGON;
 	}
 
+	private List<OwnerName> determineShapeBoundaries(List<Owner> instances) {
+		if (instances.size() < 1) {
+			return new ArrayList<OwnerName>();
+		}
+		instances = sortOwnersAlphabetically(instances);
+		List<OwnerName> corners = new ArrayList<>();
+		double xPos = Integer.MAX_VALUE;
+		double yPos = Integer.MAX_VALUE;
+		Owner temp = instances.get(0);
+		for (Owner o : instances) {
+			if (o.getLocation().getColumn() < xPos && o.getLocation().getRow() < yPos) {
+				temp = o;
+				yPos = o.getLocation().getRow();
+				xPos = o.getLocation().getColumn();
+			}
+		}
+		corners.add(temp.getNameAsEnum());
+		xPos = Integer.MIN_VALUE;
+		yPos = Integer.MAX_VALUE;
+		temp = instances.get(0);
+		for (Owner o : instances) {
+			if (!corners.contains(o.getNameAsEnum())) {
+				temp = o;
+			}
+		}
+		for (Owner o : instances) {
+			if (o.getLocation().getColumn() > xPos && o.getLocation().getRow() < yPos
+					&& !corners.contains(o.getNameAsEnum())) {
+				temp = o;
+				yPos = o.getLocation().getRow();
+				xPos = o.getLocation().getColumn();
+			}
+		}
+		corners.add(temp.getNameAsEnum());
+
+		xPos = Integer.MAX_VALUE;
+		yPos = Integer.MIN_VALUE;
+		temp = instances.get(0);
+		for (Owner o : instances) {
+			if (!corners.contains(o.getNameAsEnum())) {
+				temp = o;
+			}
+		}
+		for (Owner o : instances) {
+			if (o.getLocation().getColumn() < xPos && o.getLocation().getRow() > yPos
+					&& !corners.contains(o.getNameAsEnum())) {
+				temp = o;
+				yPos = o.getLocation().getRow();
+				xPos = o.getLocation().getColumn();
+			}
+		}
+		corners.add(temp.getNameAsEnum());
+
+		xPos = Integer.MIN_VALUE;
+		yPos = Integer.MIN_VALUE;
+		temp = instances.get(0);
+		for (Owner o : instances) {
+			if (!corners.contains(o.getNameAsEnum())) {
+				temp = o;
+			}
+		}
+		for (Owner o : instances) {
+			if (o.getLocation().getColumn() < xPos && o.getLocation().getRow() < yPos) {
+				temp = o;
+				yPos = o.getLocation().getRow();
+				xPos = o.getLocation().getColumn();
+			}
+		}
+		corners.add(temp.getNameAsEnum());
+		return corners;
+	}
+
 	/* SORTING */
 	private List<Dog> sortDogs(List<Dog> dogList) {
 		Collections.sort(dogList, new Comparator<Dog>() {
@@ -534,9 +882,6 @@ public class Player extends dogs.sim.Player {
 				return u1.getWaitingTimeRemaining().compareTo(u2.getWaitingTimeRemaining());
 			}
 		});
-		// for(Dog d: dogList){
-		// System.out.println(d.getWaitingTimeRemaining());
-		// }
 		return dogList;
 	}
 
@@ -600,7 +945,7 @@ public class Player extends dogs.sim.Player {
 	 * @param neighbors a list of neighbor owners
 	 * @param allDogs   a list of all dogs in the park
 	 **/
-	private Owner getLeastBusyNeighbor(List<Owner> neighbors, List<Dog> allDogs) {
+	private Owner getLeastBusyNeighbor(List<Owner> neighbors, List<Dog> allDogs, PlayerGraph graph) {
 		HashMap<Owner, Integer> busyMap = new HashMap<Owner, Integer>();
 		for (Owner owner : neighbors) {
 			busyMap.put(owner, 0);
@@ -610,7 +955,7 @@ public class Player extends dogs.sim.Player {
 		for (Dog dog : allDogs) {
 			if (dog.isWaitingForPerson()) {
 				Owner ownerWaited = dog.getOwnerWaitingFor();
-				if (neighbors.contains(ownerWaited)) {
+				if (neighbors.contains(ownerWaited) && !graph.getNode(ownerWaited).getParkedDogs().contains(dog)) {
 					busyMap.put(ownerWaited, busyMap.get(ownerWaited) + 1);
 				}
 			}
@@ -636,17 +981,15 @@ public class Player extends dogs.sim.Player {
 		return leastBusyOwner;
 	}
 
-	//return only the dogs with remaining exercise time > 0
+	// return only the dogs with remaining exercise time > 0
 	private List<Dog> getExercisingDogs(Owner owner, List<Dog> dogs) {
 		List<Dog> exerciseIncomplete = new ArrayList<>();
 		exerciseIncomplete.addAll(dogs);
-		System.out.println(exerciseIncomplete.toString());
 		for (Dog d : dogs) {
 			if (d.getOwner() == owner && d.getExerciseTimeRemaining() == 0.0) {
 				exerciseIncomplete.remove(d);
 			}
 		}
-		System.out.println(exerciseIncomplete.toString());
 		return exerciseIncomplete;
 	}
 
@@ -719,7 +1062,8 @@ public class Player extends dogs.sim.Player {
 		if (dist <= this.MAX_MOVE_DIST) {
 			nextRow = targetPos.getRow();
 			nextColumn = targetPos.getColumn();
-		} else { // if targetPos is more than 5m away, move toward the target position for 5m
+		} else { 
+			// if targetPos is more than 5m away, move toward the target position for 5m
 			Double curX = myLoc.getRow();
 			Double curY = myLoc.getColumn();
 			Double targetX = targetPos.getRow();
@@ -748,7 +1092,6 @@ public class Player extends dogs.sim.Player {
 			return directive;
 		}
 
-		// randomDistance = random.nextDouble() * 40.0;
 		randomAngle = Math.toRadians(random.nextDouble() * 360);
 		double ballRow = myOwner.getLocation().getRow() + randomDistance * Math.sin(randomAngle);
 		double ballColumn = myOwner.getLocation().getColumn() + randomDistance * Math.cos(randomAngle);
